@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const FALLBACK = '0.1.5';
+const FALLBACK = '0.1.6';
 
 function readPackageVersion(): string {
   if (process.env.HASSWRIGHT_VERSION) return process.env.HASSWRIGHT_VERSION;

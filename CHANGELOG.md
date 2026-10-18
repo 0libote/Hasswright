@@ -1,5 +1,9 @@
 # CHANGELOG.md
 
+## 0.1.6
+- Replace static Ingress UI with Astryx React + live HA theming (bundled via esbuild WASM into `public/build/`, allowlisted theme vars/fonts with system fallback).
+- Bump add-on version so Supervisor picks up the new UI build.
+
 ## 0.1.5
 - Fix Docker build failure (`./node_modules/.bin/tsc: not found`, exit 127): `ENV NODE_ENV=production` made `npm ci` skip devDependencies including TypeScript. Added `--include=dev` to the install step; `npm prune --omit=dev` after `tsc` still keeps the final image lean.
 - Bump add-on version so Supervisor retries the build.
