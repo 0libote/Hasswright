@@ -3,6 +3,7 @@
 [![CI](https://github.com/0libote/Hasswright/actions/workflows/ci.yml/badge.svg)](https://github.com/0libote/Hasswright/actions/workflows/ci.yml)
 ![Node >= 22](https://img.shields.io/badge/node-%3E%3D22-64E6D3)
 ![License: MIT](https://img.shields.io/badge/license-MIT-EFB76B)
+[![Add to Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2F0libote%2FHasswright)
 
 An AI engineering agent for Home Assistant: it **understands** your installation (devices, entities,
 automations, logs, repairs), **explains** what's wrong with evidence, and **changes** things only
@@ -34,7 +35,9 @@ You'll see a hallway with a motion light and one (intentionally) unavailable sen
 
 ## Install on Home Assistant (HAOS)
 
-1. Settings → Apps → ⋮ → **Repositories** → add this repo's URL.
+[![Add to Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2F0libote%2FHasswright)
+
+1. Click **Add to Home Assistant** above (or: Settings → Apps → ⋮ → **Repositories** → add `https://github.com/0libote/Hasswright`).
 2. Install **Hasswright** → Start → enable **Show in sidebar**.
 3. Open Hasswright: onboarding runs environment + capability checks.
 4. Providers: set `opencode_base_url` (or run OpenCode alongside) and sign in there; or explore read-only with the built-in assistant.
