@@ -1,5 +1,10 @@
 # CHANGELOG.md
 
+## 0.1.1
+- `HASSWRIGHT_DEMO_FIXTURE=1`: labeled sample data for UI exploration without HA (never active with a real token).
+- Dockerfile builds TypeScript in-image instead of COPYing gitignored `dist/`.
+- CI validates YAML packaging + add-on keys; issue/PR templates added.
+
 ## 0.1.0 — first release
 - Installable HA app (Ingress, amd64/aarch64), sidebar UI with 7 sections.
 - Sessions + chat (OpenCode primary, Codex experimental, mock fallback).

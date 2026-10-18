@@ -7,9 +7,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm install
-        working-directory: hasswright/app
+      - name: Validate YAML packaging
+        run: |
+          npm install --no-save js-yaml
+          node -e "
+            const yaml = require('js-yaml'), fs = require('fs'), assert = require('assert');
+            for (const f of ['hasswright/config.yaml','hasswright/build.yaml','repository.yaml','.github/workflows/ci.yml']) {
+              yaml.load(fs.readFileSync(f, 'utf8')); console.log('VALID', f);
+            }
+            const cfg = yaml.load(fs.readFileSync('hasswright/config.yaml','utf8'));
+            for (const k of ['name','version','slug','description','arch','ingress','ingress_port']) assert.ok(cfg[k] !== undefined, 'missing ' + k);
+            assert.ok(cfg.arch.includes('aarch64') && cfg.arch.includes('amd64'), 'arch must cover aarch64+amd64');
+            console.log('config.yaml keys OK');
+          "
+      - name: Dockerfile must not COPY gitignored dist
+        run: |
+          ! grep -q "COPY app/dist" hasswright/Dockerfile && echo "Dockerfile builds TS in-image OK"
+      - run: npm install --no-audit --no-fund
       - run: npm run build
-        working-directory: hasswright/app
       - run: npm test
-        working-directory: hasswright/app

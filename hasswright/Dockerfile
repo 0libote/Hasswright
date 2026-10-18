@@ -6,14 +6,19 @@ ENV LANG=C.UTF-8 \
     NODE_ENV=production \
     HASSWRIGHT_PORT=8099
 
-# Node 22 LTS (nodejs.org binary for amd64/aarch64)
-RUN apk add --no-cache nodejs npm python3 make g++ \
+# Node 22 LTS (Alpine nodejs). No native modules required by the app.
+RUN apk add --no-cache nodejs npm \
  && node --version && npm --version
 
 WORKDIR /app
-COPY app/package.json app/package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
-COPY app/dist ./dist
+# Install deps first for layer caching, then build TypeScript in-image
+# (dist/ is gitignored, so it must be built here, not COPYed).
+COPY app/package.json ./
+RUN npm install --omit=dev --no-audit --no-fund \
+ && npm install --no-audit --no-fund typescript @types/node
+COPY app/tsconfig.json ./
+COPY app/src ./src
+RUN npx tsc -p tsconfig.json && npm prune --omit=dev && rm -rf src tsconfig.json
 COPY app/public ./public
 COPY run.sh /run.sh
 RUN chmod +x /run.sh

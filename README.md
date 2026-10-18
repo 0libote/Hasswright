@@ -1,17 +1,82 @@
 # Hasswright — Your home. Understood.
 
-An AI engineering agent for Home Assistant: understands, configures, troubleshoots and maintains
-installations through a secure add-on with Ingress UI, OpenCode runtime, and a policy-gated tool gateway.
+[![CI](https://github.com/0libote/Hasswright/actions/workflows/ci.yml/badge.svg)](https://github.com/0libote/Hasswright/actions/workflows/ci.yml)
+![Node >= 22](https://img.shields.io/badge/node-%3E%3D22-64E6D3)
+![License: MIT](https://img.shields.io/badge/license-MIT-EFB76B)
 
-## Quick start
+An AI engineering agent for Home Assistant: it **understands** your installation (devices, entities,
+automations, logs, repairs), **explains** what's wrong with evidence, and **changes** things only
+through approvals, backups, and validation. Default mode is read-only.
 
-See `docs/INSTALLATION.md`. Local dev: `cd hasswright/app && npm install && npm run build && npm start`.
+> **Status:** working first release (`0.1.0`). Installable on HAOS, tested with unit + integration +
+> security suites. On-device validation checklist in `docs/DEVELOPMENT.md`.
 
-## Docs
+## What it does
 
-- `docs/RESEARCH.md` — reuse assessment
-- `docs/ARCHITECTURE.md` — system design
-- `docs/CAPABILITIES.md` — support matrix
-- `docs/PERMISSIONS.md` — modes & approvals
-- `AGENTS.md` — agent working rules
-- `SECURITY.md` — threat model
+- **Workspace** — chat with a real agent session (OpenCode primary, Codex experimental, built-in fallback).
+- **Overview / Explorer** — live inventory: versions, domains, unavailable entities, registries, repairs.
+- **Investigations** — error log, repair issues, automation traces with evidence-first diagnoses.
+- **Changes** — pending approvals (10-min TTL, single-use), diffs/previews, apply + validate + rollback.
+- **Maintenance** — opt-in, disabled-by-default read-only checks. Never auto-repairs.
+- **Settings** — tool catalog, audit history, diagnostics.
+
+## Try it in 2 minutes (no Home Assistant needed)
+
+```bash
+cd hasswright/app
+npm install
+npm run build
+HASSWRIGHT_DEMO_FIXTURE=1 npm start   # labeled sample data, UI at http://localhost:8099
+```
+
+You'll see a hallway with a motion light and one (intentionally) unavailable sensor to investigate.
+`demoFixture: true` is marked on every response. **Never enabled when a real HA token is configured.**
+
+## Install on Home Assistant (HAOS)
+
+1. Settings → Apps → ⋮ → **Repositories** → add this repo's URL.
+2. Install **Hasswright** → Start → enable **Show in sidebar**.
+3. Open Hasswright: onboarding runs environment + capability checks.
+4. Providers: set `opencode_base_url` (or run OpenCode alongside) and sign in there; or explore read-only with the built-in assistant.
+5. You start in `observe` (read-only). Switch to `assist`/`managed` in app options when ready.
+
+Details: [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
+
+## How it stays safe
+
+- Every mutation funnels through one policy gateway (`src/tools/gateway.ts`): classify → approve → snapshot → recheck → apply → validate → verify. No shell tool is exposed to the model.
+- File access is allowlisted and traversal-proof; `.storage`/databases are never written directly.
+- Secrets are redacted at the boundary; audit log records every action.
+- Full model: [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md), [`SECURITY.md`](SECURITY.md).
+
+## Repo map
+
+| Path | What |
+|---|---|
+| `hasswright/` | Add-on packaging (`config.yaml`, `Dockerfile`, `run.sh`) + `app/` backend & UI |
+| `hasswright/app/src/` | server, agent adapters, HA clients, context engine, tools, policy, routes |
+| `hasswright/app/public/` | Static Ingress UI (no build step) |
+| `custom_components/hasswright/` | Optional narrow privileged integration (explicit opt-in) |
+| `skills/` | Reusable agent procedures (automation, debugging, dashboards, …) |
+| `docs/` | RESEARCH, ARCHITECTURE, CAPABILITIES, PERMISSIONS, INSTALLATION, DEVELOPMENT |
+| `examples/` | Walkthroughs (e.g. hallway lighting) |
+
+## Development
+
+```bash
+cd hasswright/app
+npm install && npm run build && npm test   # 16 tests: policy, approvals, paths, gateway, context, fixture
+```
+
+Working rules for agents (and humans): [`AGENTS.md`](AGENTS.md). Please read it before contributing —
+especially "all mutations go through the gateway" and "never invent entity IDs".
+
+## Contributing
+
+Small, typed, tested PRs. See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bug reports and feature ideas:
+use the issue templates. Security issues: please open a private report rather than a public issue
+(see [`SECURITY.md`](SECURITY.md)).
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

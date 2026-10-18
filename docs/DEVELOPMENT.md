@@ -6,7 +6,7 @@
 
 ## Testing
 - `npm test` compiles `src/**` + `tests/**` to `dist-tests/` and runs `node:test`.
-- Suites: risk/policy, approvals lifecycle, path restrictions, gateway allow/deny, injection resistance, context indexing.
+- Suites: risk/policy, approvals lifecycle, path restrictions, gateway allow/deny, injection resistance, context indexing, demo-fixture gating.
 - Integration: HA/Supervisor calls run against mocks; live-API paths covered by typed clients + error mapping.
 - Security: observe-mode mutation denial, approval single-use/expiry, traversal/`.storage` denial, secret redaction, prompt-injection non-escalation.
 - On-device (HAOS) validation is manual: install, sidebar open, chat, overview, approval flow, change verify, restart persistence.

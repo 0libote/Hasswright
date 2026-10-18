@@ -12,7 +12,7 @@ import { redactSecrets } from '../types.js';
 export interface RouteCtx {
   store: Store; gateway: ToolGateway; ctx: ContextEngine;
   agent: AgentAdapter; approvals: Approvals; mode: string;
-  supervisorConfigured: boolean;
+  supervisorConfigured: boolean; demoFixture: boolean;
 }
 
 export async function readJson(req: IncomingMessage): Promise<unknown> {
@@ -89,7 +89,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
   // context
   if (url.pathname === '/api/overview' && method === 'GET') {
     const inv = await c.ctx.inventory(url.searchParams.get('refresh') === '1').catch((e) => ({ error: String(e) }));
-    return (send(res, 200, { overview: inv }), true);
+    return (send(res, 200, { overview: { ...(inv as object), demoFixture: c.demoFixture } }), true);
   }
   if (url.pathname === '/api/search' && method === 'GET') {
     return (send(res, 200, { results: c.ctx.search(url.searchParams.get('q') || '') }), true);
