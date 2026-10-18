@@ -19,6 +19,9 @@ jobs:
             for (const k of ['name','version','slug','description','arch','ingress','ingress_port']) assert.ok(cfg[k] !== undefined, 'missing ' + k);
             assert.ok(cfg.arch.includes('aarch64') && cfg.arch.includes('amd64'), 'arch must cover aarch64+amd64');
             console.log('config.yaml keys OK');
+            const appPkg = JSON.parse(fs.readFileSync('hasswright/app/package.json','utf8'));
+            assert.equal(String(cfg.version), String(appPkg.version), 'config.yaml version must match app package.json version (Supervisor installs config.yaml version)');
+            console.log('version sync OK', cfg.version);
           "
       - name: Dockerfile must not COPY gitignored dist
         run: |

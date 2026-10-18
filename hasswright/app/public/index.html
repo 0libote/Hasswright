@@ -44,7 +44,7 @@
     <div class="card"><h3>Run a tool</h3><label class="sr-only" for="tool-name">Tool name</label><input id="tool-name" aria-label="Tool name" placeholder="ha.check_config"><label class="sr-only" for="tool-args">Tool arguments JSON</label><input id="tool-args" aria-label="Tool arguments JSON" placeholder='{"entity_id":"light.kitchen"}'><button id="run-tool">Run</button><pre id="tool-out"></pre></div>
   </section>
   <section id="view-maintenance" class="view"><h2>Maintenance</h2><p>Proactive checks are <strong>disabled by default</strong> (read-only when enabled; never auto-repairs).</p><pre id="maint" class="card"></pre></section>
-  <section id="view-settings" class="view"><h2>Settings</h2><pre id="tools" class="card"></pre><pre id="audit" class="card"></pre></section>
+  <section id="view-settings" class="view"><h2>Settings</h2><div class="card"><h3>Version &amp; updates</h3><pre id="version">Loading…</pre><p class="hint">Updates install via Supervisor: Settings → Add-ons → Hasswright → Update (⋮ → Check for updates). Your sessions and settings in <code>/data</code> survive updates.</p></div><pre id="tools" class="card"></pre><pre id="audit" class="card"></pre></section>
 </main>
 <script type="module" src="/app.js"></script>
 </body>

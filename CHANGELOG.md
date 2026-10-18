@@ -1,6 +1,9 @@
 # CHANGELOG.md
 
-## 0.1.2
+## 0.1.3
+- Fix update story: correct repository URLs (`repository.yaml`, `config.yaml`, integration manifest pointed at `example/hasswright`).
+- Add in-app version: `/api/health` now returns `version`, new read-only `/api/version` reports Supervisor's `update_available` state; Settings shows *Version & updates*.
+- Document updates where installed users look: `hasswright/DOCS.md` (Supervisor Docs tab), `docs/INSTALLATION.md`, README.
 - Fix Docker build: `npx tsc` resolved to obsolete `tsc@2.0.4` package and failed.
   Use `npm install --include=dev` (pinned devDependencies) + `./node_modules/.bin/tsc`.
 - Bump add-on version so Supervisor picks up the fixed Dockerfile.

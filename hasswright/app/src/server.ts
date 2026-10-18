@@ -73,7 +73,7 @@ export function createServer(): http.Server {
       // Ingress auth: Home Assistant ingress validates session; also accept HA bearer for direct API.
       const handled = await handleApi(req, res, url, {
         store, gateway, ctx, agent, approvals, mode: cfg.mode,
-        supervisorConfigured: supervisor.configured, demoFixture: ha.fixture,
+        supervisor, supervisorConfigured: supervisor.configured, demoFixture: ha.fixture,
       });
       if (handled) return;
       if (servePublic(req, res, resolvedPublic)) return;

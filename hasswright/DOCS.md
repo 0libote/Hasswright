@@ -16,3 +16,16 @@ Persistent data lives in `/data` (sessions, settings, approvals, audit, snapshot
 ## Ports
 
 Ingress only by default. Exposing `8099/tcp` is optional and off by default.
+
+## Updating
+
+Updates come from Supervisor, not from this UI:
+
+1. **Settings → Add-ons → Hasswright → Update.**
+2. No button? **⋮ → Check for updates**, then **Settings → Apps → ⋮ → Reload**.
+3. Still stuck? **Rebuild** the add-on, or re-add the repository URL
+   `https://github.com/0libote/Hasswright`.
+4. Verify in Hasswright → **Settings → Version & updates**.
+
+Your `/data` (sessions, settings, approvals, audit) survives updates. Supervisor
+also takes a hot backup on update. See `docs/INSTALLATION.md` for details.

@@ -4,15 +4,17 @@ import type { Store } from '../storage.js';
 import type { ToolGateway } from '../tools/gateway.js';
 import type { ContextEngine } from '../context/engine.js';
 import type { AgentAdapter } from '../agent/types.js';
+import type { Supervisor } from '../ha/supervisor.js';
 import { Approvals } from '../policy/approvals.js';
 import { classify } from '../policy/risk.js';
 import { TOOL_DEFINITIONS } from '../tools/definitions.js';
 import { redactSecrets } from '../types.js';
+import { ADDON_REPOSITORY, ADDON_SLUG, ADDON_VERSION } from '../version.js';
 
 export interface RouteCtx {
   store: Store; gateway: ToolGateway; ctx: ContextEngine;
   agent: AgentAdapter; approvals: Approvals; mode: string;
-  supervisorConfigured: boolean; demoFixture: boolean;
+  supervisor: Supervisor; supervisorConfigured: boolean; demoFixture: boolean;
 }
 
 export async function readJson(req: IncomingMessage): Promise<unknown> {
@@ -41,7 +43,8 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
   needIngress(req);
   const method = req.method || 'GET';
 
-  if (url.pathname === '/api/health') return (send(res, 200, { ok: true, mode: c.mode, ts: Date.now() }), true);
+  if (url.pathname === '/api/health') return (send(res, 200, { ok: true, mode: c.mode, ts: Date.now(), version: ADDON_VERSION }), true);
+  if (url.pathname === '/api/version' && method === 'GET') return (await handleVersion(req, res, c), true);
   if (await handleSessions(req, res, url, c, method)) return true;
   if (await handleContext(req, res, url, c, method)) return true;
   if (await handleToolExec(req, res, url, c, method)) return true;
@@ -162,4 +165,21 @@ function handleMaintenance(res: ServerResponse, url: URL, method: string): boole
 
 function previewOf(tool: string, args: Record<string, unknown>): string {
   return `${tool} ${JSON.stringify(args).slice(0, 500)}`;
+}
+
+async function handleVersion(_req: IncomingMessage, res: ServerResponse, c: RouteCtx): Promise<boolean> {
+  // Read-only update check. Supervisor data is best-effort; never fails the endpoint.
+  let supervisor: Awaited<ReturnType<RouteCtx['supervisor']['hasswrightUpdate']>> = null;
+  try {
+    supervisor = await c.supervisor.hasswrightUpdate();
+  } catch { supervisor = null; }
+  return (send(res, 200, {
+    version: {
+      installed: ADDON_VERSION,
+      slug: ADDON_SLUG,
+      repository: ADDON_REPOSITORY,
+      supervisor,
+      howToUpdate: 'Settings → Add-ons → Hasswright → Update (⋮ → Check for updates if none shows). See DOCS.md “Updating”.',
+    },
+  }), true);
 }

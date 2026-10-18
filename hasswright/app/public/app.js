@@ -117,6 +117,20 @@ async function loadSettings() {
   const t = await api('/api/tools'); $('tools').textContent = JSON.stringify(t.body, null, 2).slice(0, 6000);
   const a = await api('/api/audit'); $('audit').textContent = 'AUDIT\n' + JSON.stringify(a.body.audit, null, 2).slice(0, 6000);
   const h = await api('/api/health'); document.getElementById('mode-badge').textContent = h.body.mode || 'observe';
+  try {
+    const v = await api('/api/version');
+    const info = v.body.version || {};
+    const sup = info.supervisor;
+    const lines = [`installed: ${info.installed || h.body.version || 'unknown'}`, `repository: ${info.repository || ''}`];
+    if (sup && (sup.installed || sup.latest)) {
+      lines.push(`supervisor reports installed=${sup.installed || '?'} latest=${sup.latest || '?'}`);
+      lines.push(sup.updateAvailable ? 'UPDATE AVAILABLE → Settings → Add-ons → Hasswright → Update.' : 'Up to date (per Supervisor).');
+    } else {
+      lines.push('No Supervisor update data (open Settings → Add-ons → ⋮ → Check for updates).');
+    }
+    if (info.howToUpdate) lines.push(info.howToUpdate);
+    $('version').textContent = lines.join('\n');
+  } catch (e) { $('version').textContent = 'Version check failed: ' + e.message; }
 }
 async function loadMaint() { const m = await api('/api/maintenance'); $('maint').textContent = JSON.stringify(m.body, null, 2); }
 try { await refreshSessions(); await loadOverview(); await loadSettings(); } catch (e) { console.error(e); }
