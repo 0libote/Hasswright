@@ -6,7 +6,7 @@ export interface Finding { id: string; severity: 'info' | 'warn' | 'error'; titl
 
 export class Maintenance {
   enabled = process.env.MAINTENANCE_ENABLED === '1';
-  constructor(private ha: HACore, private ctx: ContextEngine) {}
+  constructor(private readonly ha: HACore, private readonly ctx: ContextEngine) {}
 
   async runOnce(): Promise<Finding[]> {
     const out: Finding[] = [];
@@ -28,6 +28,6 @@ export class Maintenance {
 }
 
 function hash(s: string): string {
-  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + (s.codePointAt(i) ?? 0)) >>> 0;
   return String(h);
 }

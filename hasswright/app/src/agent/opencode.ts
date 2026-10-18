@@ -4,7 +4,7 @@ import type { AgentAdapter } from './types.js';
 // Ref: docs/RESEARCH.md — OpenCode server exposes /global/health, /session, /session/:id/message.
 export class OpenCodeAdapter implements AgentAdapter {
   name = 'opencode';
-  constructor(private baseUrl: string) {}
+  constructor(private readonly baseUrl: string) {}
   get configured(): boolean { return this.baseUrl.length > 0; }
 
   async status() {

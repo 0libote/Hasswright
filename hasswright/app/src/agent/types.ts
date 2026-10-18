@@ -6,8 +6,8 @@ export interface AgentAdapter {
 
 export class MockAgent implements AgentAdapter {
   name = 'mock';
-  async status() { return { ok: true, detail: 'built-in mock (no provider configured)' }; }
-  async chat(_s: string, prompt: string, _c: string, _t: unknown) {
+  status(): Promise<{ ok: boolean; detail: string }> { return Promise.resolve({ ok: true, detail: 'built-in mock (no provider configured)' }); }
+  chat(_s: string, prompt: string, _c: string, _t: unknown): Promise<{ text: string; toolCalls: Array<{ tool: string; args: Record<string, unknown> }> }> {
     const p = prompt.toLowerCase();
     let text = 'I reviewed your installation context. ';
     const calls: Array<{ tool: string; args: Record<string, unknown> }> = [];
@@ -22,6 +22,6 @@ export class MockAgent implements AgentAdapter {
     } else {
       text += 'Ask about devices, entities, automations, logs, or dashboards. Mutations always need approval in Assist/Managed modes and are blocked in Observe.';
     }
-    return { text, toolCalls: calls };
+    return Promise.resolve({ text, toolCalls: calls });
   }
 }

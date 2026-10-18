@@ -1,6 +1,6 @@
 // Supervisor API client (narrow, documented endpoints only).
 export class Supervisor {
-  constructor(private baseUrl: string, private token: string) {}
+  constructor(private readonly baseUrl: string, private readonly token: string) {}
   get configured(): boolean { return this.token.length > 0; }
 
   private headers(): Record<string, string> {

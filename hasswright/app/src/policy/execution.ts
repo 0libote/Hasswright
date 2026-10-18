@@ -20,7 +20,7 @@ export function ensureExt(abs: string): void {
   if (!ALLOWED_EXT.has(path.extname(abs).toLowerCase())) throw new Error(`extension not allowed: ${abs}`);
 }
 
-export async function snapshotFiles(store: Store, label: string, files: string[]): Promise<string> {
+export function snapshotFiles(store: Store, label: string, files: string[]): string {
   const id = `snap-${Date.now()}`;
   const data: Record<string, string> = {};
   for (const f of files) {

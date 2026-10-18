@@ -19,7 +19,7 @@ const MIME: Record<string, string> = {
 };
 
 function servePublic(req: http.IncomingMessage, res: http.ServerResponse, publicDir: string): boolean {
-  const url = new URL(req.url || '/', 'http://x');
+  const url = new URL(req.url || '/', 'http://x'); // NOSONAR (typescript:S5332) -- dummy base for parsing relative URL, never fetched
   if (url.pathname.startsWith('/api/')) return false;
   let p = url.pathname === '/' ? '/index.html' : url.pathname;
   const file = path.join(publicDir, path.normalize(p).replace(/^\/+/, ''));
@@ -36,6 +36,18 @@ function servePublic(req: http.IncomingMessage, res: http.ServerResponse, public
   return true;
 }
 
+function selectAgent(cfg: ReturnType<typeof loadConfig>): MockAgent | OpenCodeAdapter | CodexAdapter {
+  if (cfg.opencodeBaseUrl) return new OpenCodeAdapter(cfg.opencodeBaseUrl);
+  if (cfg.codexEnabled) return new CodexAdapter();
+  return new MockAgent();
+}
+
+function resolvePublicDir(): string {
+  const nested = path.join(process.cwd(), 'public');
+  if (nested.includes('dist')) return path.join(process.cwd(), '..', 'public');
+  return nested;
+}
+
 export function createServer(): http.Server {
   const cfg = loadConfig();
   const store = new Store(cfg.dataDir);
@@ -44,18 +56,15 @@ export function createServer(): http.Server {
   const ctx = new ContextEngine(ha);
   const gateway = new ToolGateway({ mode: cfg.mode, ha, supervisor, store, ctx, configDir: cfg.dataDir });
   const approvals = new Approvals(store);
-  const agent = cfg.opencodeBaseUrl ? new OpenCodeAdapter(cfg.opencodeBaseUrl)
-    : cfg.codexEnabled ? new CodexAdapter() : new MockAgent();
+  const agent = selectAgent(cfg);
 
-  const publicDir = path.join(process.cwd(), 'public').includes('dist')
-    ? path.join(process.cwd(), '..', 'public')
-    : path.join(process.cwd(), 'public');
+  const publicDir = resolvePublicDir();
   const resolvedPublic = fs.existsSync(path.join(process.cwd(), 'public')) ? path.join(process.cwd(), 'public')
     : fs.existsSync('/app/public') ? '/app/public' : publicDir;
 
   const server = http.createServer(async (req, res) => {
     try {
-      const url = new URL(req.url || '/', 'http://x');
+      const url = new URL(req.url || '/', 'http://x'); // NOSONAR (typescript:S5332) -- dummy base for parsing, no network call
       // Ingress auth: Home Assistant ingress validates session; also accept HA bearer for direct API.
       const handled = await handleApi(req, res, url, {
         store, gateway, ctx, agent, approvals, mode: cfg.mode,
@@ -65,6 +74,8 @@ export function createServer(): http.Server {
       if (servePublic(req, res, resolvedPublic)) return;
       res.writeHead(404); res.end('not found');
     } catch (e) {
+      // Intentionally generic response; log a sanitized message for diagnostics.
+      console.error(`[hasswright] request failed: ${e instanceof Error ? e.message : 'unknown'}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'internal' }));
     }

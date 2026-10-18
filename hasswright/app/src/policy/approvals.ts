@@ -5,7 +5,7 @@ import type { Store } from '../storage.js';
 const TTL_MS = 10 * 60_000;
 
 export class Approvals {
-  constructor(private store: Store) {}
+  constructor(private readonly store: Store) {}
 
   request(tool: string, args: Record<string, unknown>, risk: Risk, preview?: string): Approval {
     const now = Date.now();

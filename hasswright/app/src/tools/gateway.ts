@@ -20,7 +20,7 @@ export interface GatewayOpts {
 
 // Single choke point: every effectful route AND every agent tool call goes here.
 export class ToolGateway {
-  constructor(private o: GatewayOpts) {}
+  constructor(private readonly o: GatewayOpts) {}
 
   describe(): unknown {
     return { mode: this.o.mode, tools: 'see /api/tools' };
@@ -35,7 +35,7 @@ export class ToolGateway {
       throw Object.assign(new Error('approval required'), { code: 'APPROVAL_REQUIRED', risk });
     }
     const a = this.o.store.getApproval(approvalId);
-    if (!a || a.status !== 'approved' || Date.now() > a.expiresAt) {
+    if (a?.status !== 'approved' || Date.now() > (a?.expiresAt ?? 0)) {
       throw Object.assign(new Error('invalid or expired approval'), { code: 'APPROVAL_INVALID' });
     }
     if (a.tool !== tool) throw Object.assign(new Error('approval tool mismatch'), { code: 'APPROVAL_MISMATCH' });
@@ -54,17 +54,17 @@ export class ToolGateway {
         const inv = await ctx.inventory();
         return redactSecrets({ ...inv, mode: this.o.mode });
       }
-      case 'ha.search_entities': return redactSecrets(ctx.search(String(args.query || '')));
-      case 'ha.get_state': return redactSecrets(await ha.getState(String(args.entity_id)));
+      case 'ha.search_entities': return redactSecrets(ctx.search(toText(args.query)));
+      case 'ha.get_state': return redactSecrets(await ha.getState(toText(args.entity_id)));
       case 'ha.get_log': {
         const log = await ha.getLog().catch(() => '(log unavailable in demo)');
         const max = Number(args.max_chars || 8000);
         return redactSecrets(log.slice(-max));
       }
-      case 'ha.get_trace': return redactSecrets(await ha.getAutomationTrace(String(args.entity_id)));
+      case 'ha.get_trace': return redactSecrets(await ha.getAutomationTrace(toText(args.entity_id)));
       case 'ha.get_repairs': return redactSecrets(await ha.getRepairs());
       case 'ha.check_config': return ha.checkConfig().catch(() => ({ result: 'unknown' as const }));
-      case 'ha.render_template': return ha.renderTemplate(String(args.template || '')).catch(() => '(render unavailable in demo)');
+      case 'ha.render_template': return ha.renderTemplate(toText(args.template)).catch(() => '(render unavailable in demo)');
       case 'ha.list_files': {
         const dir = resolveAllowed(String(args.dir));
         return fs.readdirSync(dir, { withFileTypes: true }).map((e) => ({ name: e.name, dir: e.isDirectory() }));
@@ -93,8 +93,8 @@ export class ToolGateway {
         if (!fs.existsSync(abs)) throw new Error('target file does not exist (no implicit creation for config targets)');
         const snap = await snapshotFiles(store, `pre-edit ${p}`, [p]);
         const cur = fs.readFileSync(abs, 'utf8');
-        const oldText = String(args.old_text || '');
-        const newText = String(args.new_text ?? JSON.stringify(args.fragment ?? args.automation ?? '', null, 2));
+        const oldText = toText(args.old_text);
+        const newText = typeof args.new_text === 'string' ? args.new_text : JSON.stringify(args.new_text ?? args.fragment ?? args.automation ?? '');
         if (oldText && !cur.includes(oldText)) throw new Error('old_text not found; re-plan required');
         fs.writeFileSync(abs, oldText ? cur.replace(oldText, newText) : cur + '\n' + newText);
         const validation = await ha.checkConfig().catch(() => ({ result: 'unknown' as const }));
@@ -103,7 +103,7 @@ export class ToolGateway {
       }
       case 'ha.create_backup': {
         if (!supervisor.configured) return { ok: false, reason: 'supervisor not available (demo or missing token)' };
-        return supervisor.createBackup(String(args.name || `hasswright-${Date.now()}`));
+        return supervisor.createBackup(toText(args.name) || `hasswright-${Date.now()}`);
       }
       case 'ha.restart_core': {
         this.check(tool, args, approvalId);
@@ -116,6 +116,13 @@ export class ToolGateway {
       default: throw new Error(`unknown tool: ${tool}`);
     }
   }
+}
+
+function toText(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  try { return JSON.stringify(v) ?? ''; } catch { return ''; }
 }
 
 function previewAutomation(auto: Record<string, unknown>): string {

@@ -7,7 +7,7 @@ export interface HAState {
 export interface HACheckResult { result: 'valid' | 'invalid'; errors: string | null; warnings: string | null; }
 
 export class HACore {
-  constructor(private baseUrl: string, private token: string) {}
+  constructor(private readonly baseUrl: string, private readonly token: string) {}
 
   get configured(): boolean { return this.baseUrl.length > 0; }
   get hasAuth(): boolean { return this.token.length > 0; }
@@ -20,7 +20,9 @@ export class HACore {
 
   async api(path: string, init?: RequestInit): Promise<Response> {
     const url = this.baseUrl.replace(/\/$/, '') + path;
-    return fetch(url, { ...init, headers: { ...(init?.headers as object || {}), ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}) } });
+    const extra = (init?.headers ?? {}) as Record<string, string>;
+    const auth: Record<string, string> = this.token ? { Authorization: `Bearer ${this.token}` } : {};
+    return fetch(url, { ...init, headers: { ...extra, ...auth } });
   }
 
   async getConfig(): Promise<unknown> {

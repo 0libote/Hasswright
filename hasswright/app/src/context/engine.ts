@@ -23,7 +23,7 @@ export class ContextEngine {
   private entitiesReg: unknown[] = [];
   private areas: unknown[] = [];
 
-  constructor(private ha: HACore) {}
+  constructor(private readonly ha: HACore) {}
 
   get lastTakenAt(): number | null { return this.cache?.takenAt ?? null; }
 

@@ -27,8 +27,8 @@ export function loadConfig(): AppConfig {
   const port = Number(process.env.HASSWRIGHT_PORT || process.env.PORT || 8099);
   const dataDir = process.env.HASSWRIGHT_DATA_DIR || path.join(process.cwd(), '.hasswright-data');
   const haBaseUrl = process.env.HA_BASE_URL
-    || (process.env.SUPERVISOR_HOST ? 'http://supervisor/core' : 'http://homeassistant:8123');
-  const supervisorBaseUrl = process.env.SUPERVISOR_BASE_URL || 'http://supervisor';
+    || (process.env.SUPERVISOR_HOST ? 'http://supervisor/core' : 'http://homeassistant:8123'); // NOSONAR (typescript:S5332) -- HA-internal plain HTTP; no TLS by platform design
+  const supervisorBaseUrl = process.env.SUPERVISOR_BASE_URL || 'http://supervisor'; // NOSONAR (typescript:S5332) -- Supervisor API is HTTP-only on the internal Docker network
   return {
     port,
     dataDir,

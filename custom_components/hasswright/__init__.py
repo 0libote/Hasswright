@@ -12,11 +12,11 @@ from homeassistant.core import HomeAssistant
 DOMAIN = "hasswright"
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # NOSONAR (python:S7503) -- HA contract requires async even without await
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # NOSONAR (python:S7503) -- HA contract requires async even without await
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     return True

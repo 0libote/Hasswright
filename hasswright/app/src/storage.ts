@@ -12,8 +12,8 @@ interface DB {
 
 // Minimal durable JSON store (no native deps; survives restarts/upgrades via /data).
 export class Store {
-  private file: string;
-  private db: DB;
+  private readonly file: string;
+  private readonly db: DB;
 
   constructor(dataDir: string) {
     fs.mkdirSync(dataDir, { recursive: true });
