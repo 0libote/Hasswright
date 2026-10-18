@@ -27,10 +27,12 @@ WORKDIR /app
 # skip devDependencies (typescript), breaking the in-image `tsc` build.
 COPY app/package.json app/package-lock.json ./
 RUN npm ci --include=dev --no-audit --no-fund --ignore-scripts
-COPY app/tsconfig.json ./
+COPY app/tsconfig.json app/tsconfig.ui.json ./
 COPY app/src ./src
-RUN ./node_modules/.bin/tsc -p tsconfig.json && npm prune --omit=dev --no-audit --no-fund && rm -rf src tsconfig.json
 COPY app/public ./public
+COPY app/ui ./ui
+COPY app/scripts ./scripts
+RUN npm run build && npm prune --omit=dev --no-audit --no-fund && rm -rf src ui scripts tsconfig.json tsconfig.ui.json
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
 

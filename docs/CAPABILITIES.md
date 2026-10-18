@@ -3,7 +3,8 @@
 | Capability | Status | Mechanism |
 |---|---|---|
 | Install as HA app | ✅ | `hasswright/config.yaml` + Ingress |
-| Sidebar + streaming chat | ✅ | `public/`, sessions API |
+| Sidebar + conversational chat | ✅ | Astryx chat components, sessions API (request/reply) |
+| Home Assistant appearance | ✅ in same-origin Ingress | Live theme-variable bridge to Astryx; system light/dark fallback for direct/cross-origin access |
 | Provider auth (OpenCode OAuth/API, local models) | ✅ via OpenCode | OpenCode server handles providers; Hasswright passes through |
 | Read states/log/traces/repairs/registries | ✅ | Core REST + WS |
 | Entity search, dependencies, stale refs | ✅ | ContextEngine |

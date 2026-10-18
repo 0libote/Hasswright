@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-tests/
+hasswright/app/public/build/
 .hasswright-data/
 *.log
 .DS_Store

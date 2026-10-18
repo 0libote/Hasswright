@@ -2,7 +2,23 @@
 
 ## Dev
 - `cd hasswright/app && npm install && npm run build && npm test`
-- Node ≥22. No native deps. UI is static (`public/`), no bundler.
+- Node ≥22. No native deps. Astryx/React UI source lives in `ui/`; `npm run build`
+  type-checks it and bundles local JS/CSS into `public/build/` using esbuild WASM.
+  Run the build before starting the server; `npm run build:ui` in `hasswright/app`
+  rebuilds only the UI. Generated assets are ignored by git and built in Docker.
+- No runtime CDNs or external fonts are needed. Package versions and both root/app
+  lockfiles are committed; the app lockfile supports standalone Docker installs.
+
+## Appearance
+- In same-origin HA Ingress, the UI reads an allowlist of presentation variables
+  from its iframe element, including variables inherited through HA shadow roots.
+  Astryx tokens map to HA backgrounds, text, primary color, sidebar colors, fonts,
+  card borders, radius, and shadow. Active theme changes sync within one second.
+  Already-loaded HA font faces are reused in the iframe without external font requests.
+- Direct or cross-origin embeds follow the system color scheme with HA-like defaults.
+  No HA credentials, internal connection objects, or theme settings are modified.
+- Manually verify light/dark/custom HA themes, live theme switching, mobile
+  navigation, chat/session switching, entity dependencies, and approval review.
 
 ## Testing
 - `npm test` compiles `src/**` + `tests/**` to `dist-tests/` and runs `node:test`.

@@ -7,16 +7,26 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run build:ui",
     "start": "node dist/server.js",
     "dev": "node --watch dist/server.js",
     "test": "tsc -p tsconfig.tests.json && node --test dist-tests/tests/*.test.js",
     "build-tests": "tsc -p tsconfig.tests.json",
-    "lint": "tsc --noEmit -p tsconfig.json"
+    "lint": "tsc --noEmit -p tsconfig.json && tsc -p tsconfig.ui.json",
+    "build:ui": "tsc -p tsconfig.ui.json && node scripts/build-ui.mjs"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@astryxdesign/core": "0.7.1",
+    "@astryxdesign/theme-neutral": "0.7.1",
+    "@stylexjs/stylex": "0.19.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
   "devDependencies": {
-    "typescript": "5.6.3",
-    "@types/node": "22.7.0"
+    "@types/node": "22.7.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild-wasm": "0.28.2",
+    "typescript": "5.6.3"
   }
 }

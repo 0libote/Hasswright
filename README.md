@@ -64,7 +64,8 @@ shows). In-app version + Supervisor update state: Hasswright → **Settings → 
 |---|---|
 | `hasswright/` | Add-on packaging (`config.yaml`, `Dockerfile`, `run.sh`) + `app/` backend & UI |
 | `hasswright/app/src/` | server, agent adapters, HA clients, context engine, tools, policy, routes |
-| `hasswright/app/public/` | Static Ingress UI (no build step) |
+| `hasswright/app/ui/` | Astryx/React Ingress UI with live Home Assistant theming |
+| `hasswright/app/public/` | Static shell/assets + generated UI bundle (`npm run build`) |
 | `custom_components/hasswright/` | Optional narrow privileged integration (explicit opt-in) |
 | `skills/` | Reusable agent procedures (automation, debugging, dashboards, …) |
 | `docs/` | RESEARCH, ARCHITECTURE, CAPABILITIES, PERMISSIONS, INSTALLATION, DEVELOPMENT |

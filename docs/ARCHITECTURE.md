@@ -12,7 +12,8 @@ Hasswright Backend (Node 22, :8099)
  ├── tools/             definitions.ts (typed), gateway.ts (single choke point)
  ├── policy/            risk.ts (classify/gate), approvals.ts (TTL+single-use), execution.ts (snapshot/recheck/validate/rollback)
  ├── storage.ts         JSON store in /data (sessions, approvals, audit, snapshots, settings)
- └── public/            static Ingress UI (Workspace/Overview/Explorer/Investigations/Changes/Maintenance/Settings)
+ ├── ui/                Astryx/React UI + live HA theme bridge (bundled with esbuild WASM)
+ └── public/            static shell/assets + generated build/ (all seven existing views)
 ```
 
 **Security invariant:** every effectful path (HTTP route, agent tool call, file write, service call) passes

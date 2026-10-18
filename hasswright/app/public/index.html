@@ -1,52 +1,17 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<base href="./">
-<title>Hasswright — Your home. Understood.</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="icon" href="assets/logo.svg">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <base href="./">
+  <title>Hasswright — Your home. Understood.</title>
+  <link rel="stylesheet" href="build/app.css">
+  <link rel="icon" href="assets/logo.svg">
 </head>
 <body>
-<header class="top">
-  <img src="assets/logo.svg" alt="Hasswright" class="logo">
-  <div class="brand"><strong>Hasswright</strong><span>Your home. Understood.</span></div>
-  <nav id="nav">
-    <button data-view="workspace" class="active">Workspace</button>
-    <button data-view="overview">Overview</button>
-    <button data-view="explorer">Explorer</button>
-    <button data-view="investigations">Investigations</button>
-    <button data-view="changes">Changes</button>
-    <button data-view="maintenance">Maintenance</button>
-    <button data-view="settings">Settings</button>
-  </nav>
-  <div id="mode-badge" class="mode">observe</div>
-</header>
-<main>
-  <section id="view-workspace" class="view active">
-    <div class="chat-wrap">
-      <div class="sess-bar"><label class="sr-only" for="sessions">Sessions</label><select id="sessions" aria-label="Sessions"></select><button id="new-session">New</button><button id="cancel">Cancel</button></div>
-      <div id="messages" class="messages" aria-live="polite"></div>
-      <form id="chat-form"><label class="sr-only" for="chat-input">Message</label><input id="chat-input" aria-label="Message" placeholder="Ask about your home, e.g. “Why does this sensor keep disconnecting?”" autocomplete="off"><button type="submit">Send</button></form>
-      <p class="hint">Read-only by default. Mutations need explicit approval in Changes.</p>
-    </div>
-  </section>
-  <section id="view-overview" class="view"><h2>Overview</h2><button id="refresh">Refresh inventory</button><pre id="overview" class="card">Loading…</pre></section>
-  <section id="view-explorer" class="view"><h2>Explorer</h2><label class="sr-only" for="q">Search entities</label><input id="q" aria-label="Search entities" placeholder="Search entities…"><div id="results" class="card"></div><div id="deps" class="card"></div></section>
-  <section id="view-investigations" class="view"><h2>Investigations</h2>
-    <div class="grid">
-      <div class="card"><h3>Error log</h3><button id="load-log">Load log</button><pre id="log"></pre></div>
-      <div class="card"><h3>Repairs</h3><button id="load-repairs">Load repairs</button><pre id="repairs"></pre></div>
-      <div class="card"><h3>Trace</h3><label class="sr-only" for="trace-id">Automation entity id</label><input id="trace-id" aria-label="Automation entity id" placeholder="automation.xxx"><button id="load-trace">Load trace</button><pre id="trace"></pre></div>
-    </div>
-  </section>
-  <section id="view-changes" class="view"><h2>Changes</h2><div id="approvals"></div>
-    <div class="card"><h3>Run a tool</h3><label class="sr-only" for="tool-name">Tool name</label><input id="tool-name" aria-label="Tool name" placeholder="ha.check_config"><label class="sr-only" for="tool-args">Tool arguments JSON</label><input id="tool-args" aria-label="Tool arguments JSON" placeholder='{"entity_id":"light.kitchen"}'><button id="run-tool">Run</button><pre id="tool-out"></pre></div>
-  </section>
-  <section id="view-maintenance" class="view"><h2>Maintenance</h2><p>Proactive checks are <strong>disabled by default</strong> (read-only when enabled; never auto-repairs).</p><pre id="maint" class="card"></pre></section>
-  <section id="view-settings" class="view"><h2>Settings</h2><div class="card"><h3>Version &amp; updates</h3><pre id="version">Loading…</pre><p class="hint">Updates install via Supervisor: Settings → Add-ons → Hasswright → Update (⋮ → Check for updates). Your sessions and settings in <code>/data</code> survive updates.</p></div><pre id="tools" class="card"></pre><pre id="audit" class="card"></pre></section>
-</main>
-<script type="module" src="app.js"></script>
+  <div id="root"></div>
+  <noscript>Enable JavaScript to open Hasswright.</noscript>
+  <script type="module" src="build/app.js"></script>
 </body>
 </html>
