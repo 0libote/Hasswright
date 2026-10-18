@@ -18,10 +18,10 @@ WORKDIR /app
 # Install deps first for layer caching, then build TypeScript in-image
 # (dist/ is gitignored, so it must be built here, not COPYed).
 COPY app/package.json ./
-RUN npm install --no-audit --no-fund --ignore-scripts typescript@5.6.3 @types/node@22.7.0
+RUN npm install --no-audit --no-fund --ignore-scripts --include=dev
 COPY app/tsconfig.json ./
 COPY app/src ./src
-RUN ./node_modules/.bin/tsc -p tsconfig.json && npm prune --omit=dev && rm -rf src tsconfig.json
+RUN ./node_modules/.bin/tsc -p tsconfig.json && npm prune --omit=dev --no-audit --no-fund && rm -rf src tsconfig.json
 COPY app/public ./public
 COPY run.sh /run.sh
 RUN chmod +x /run.sh

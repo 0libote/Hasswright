@@ -1,5 +1,10 @@
 # CHANGELOG.md
 
+## 0.1.2
+- Fix Docker build: `npx tsc` resolved to obsolete `tsc@2.0.4` package and failed.
+  Use `npm install --include=dev` (pinned devDependencies) + `./node_modules/.bin/tsc`.
+- Bump add-on version so Supervisor picks up the fixed Dockerfile.
+
 ## 0.1.1
 - `HASSWRIGHT_DEMO_FIXTURE=1`: labeled sample data for UI exploration without HA (never active with a real token).
 - Dockerfile builds TypeScript in-image instead of COPYing gitignored `dist/`.

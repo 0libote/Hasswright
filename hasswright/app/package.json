@@ -1,6 +1,6 @@
 {
   "name": "hasswright-app",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Hasswright backend + Ingress UI",
   "engines": {
