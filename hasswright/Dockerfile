@@ -1,5 +1,7 @@
+# NOTE (docker:S6471): HA add-ons run as root by platform convention (s6-overlay, /data).
+# Deliberate; reviewed as safe for this image. See SonarCloud Accepted issue if still flagged.
 ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:3.21
-FROM ${BUILD_FROM} AS base # NOSONAR (docker:S6471) -- HA add-ons run as root by platform convention (s6-overlay, /data). Deliberate.
+FROM ${BUILD_FROM} AS base
 
 ARG BUILD_ARCH=amd64
 ENV LANG=C.UTF-8 \

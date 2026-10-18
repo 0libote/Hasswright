@@ -42,6 +42,12 @@ function selectAgent(cfg: ReturnType<typeof loadConfig>): MockAgent | OpenCodeAd
   return new MockAgent();
 }
 
+function resolveServedDir(fallback: string): string {
+  if (fs.existsSync(path.join(process.cwd(), 'public'))) return path.join(process.cwd(), 'public');
+  if (fs.existsSync('/app/public')) return '/app/public';
+  return fallback;
+}
+
 function resolvePublicDir(): string {
   const nested = path.join(process.cwd(), 'public');
   if (nested.includes('dist')) return path.join(process.cwd(), '..', 'public');
@@ -59,8 +65,7 @@ export function createServer(): http.Server {
   const agent = selectAgent(cfg);
 
   const publicDir = resolvePublicDir();
-  const resolvedPublic = fs.existsSync(path.join(process.cwd(), 'public')) ? path.join(process.cwd(), 'public')
-    : fs.existsSync('/app/public') ? '/app/public' : publicDir;
+  const resolvedPublic = resolveServedDir(publicDir);
 
   const server = http.createServer(async (req, res) => {
     try {

@@ -1,16 +1,15 @@
 const $ = (id) => document.getElementById(id);
 let sessionId = null;
-function kick(p) { if (p && typeof p.catch === 'function') p.catch((e) => console.error(e)); }
 
 document.querySelectorAll('#nav button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('#nav button').forEach((x) => x.classList.remove('active'));
   b.classList.add('active');
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   $('view-' + b.dataset.view).classList.add('active');
-  if (b.dataset.view === 'overview') kick(loadOverview());
-  if (b.dataset.view === 'changes') kick(loadApprovals());
-  if (b.dataset.view === 'settings') kick(loadSettings());
-  if (b.dataset.view === 'maintenance') kick(loadMaint());
+  if (b.dataset.view === 'overview') loadOverview().catch((e) => console.error(e));
+  if (b.dataset.view === 'changes') loadApprovals().catch((e) => console.error(e));
+  if (b.dataset.view === 'settings') loadSettings().catch((e) => console.error(e));
+  if (b.dataset.view === 'maintenance') loadMaint().catch((e) => console.error(e));
 }));
 
 async function api(path, opts) {
@@ -42,7 +41,7 @@ $('sessions').addEventListener('change', async (e) => {
 });
 $('new-session').addEventListener('click', async () => {
   const { body } = await api('/api/sessions', { method: 'POST', body: '{}' });
-  sessionId = body.session.id; kick(refreshSessions());
+  sessionId = body.session.id; refreshSessions().catch((e) => console.error(e));
 });
 $('chat-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -102,7 +101,7 @@ async function loadApprovals() {
     `<div>[${a.status}] ${a.tool} <code>${a.preview || ''}</code> <button data-id="${a.id}" data-ok="1">Approve</button> <button data-id="${a.id}" data-ok="0">Reject</button></div>`).join(' ') + '</div>';
   $('approvals').querySelectorAll('button').forEach((b) => b.addEventListener('click', async () => {
     await api('/api/approvals/decide', { method: 'POST', body: JSON.stringify({ id: b.dataset.id, approve: b.dataset.ok === '1' }) });
-    kick(loadApprovals());
+    loadApprovals().catch((e) => console.error(e));
   }));
 }
 $('run-tool').addEventListener('click', async () => {
@@ -112,7 +111,7 @@ $('run-tool').addEventListener('click', async () => {
     const r = await api('/api/tools/exec', { method: 'POST', body: JSON.stringify({ tool: $('tool-name').value, args }) });
     $('tool-out').textContent = JSON.stringify(r.body, null, 2).slice(0, 8000) + (r.status === 428 ? '\n\n→ Approval created. Approve it in the list above, then re-run with approvalId.' : '');
   } catch (e) { $('tool-out').textContent = 'Error: ' + e.message; }
-  kick(loadApprovals());
+  loadApprovals().catch((e) => console.error(e));
 });
 async function loadSettings() {
   const t = await api('/api/tools'); $('tools').textContent = JSON.stringify(t.body, null, 2).slice(0, 6000);
@@ -120,4 +119,4 @@ async function loadSettings() {
   const h = await api('/api/health'); document.getElementById('mode-badge').textContent = h.body.mode || 'observe';
 }
 async function loadMaint() { const m = await api('/api/maintenance'); $('maint').textContent = JSON.stringify(m.body, null, 2); }
-(async () => { try { await refreshSessions(); await loadOverview(); await loadSettings(); } catch (e) { console.error(e); } })();
+try { await refreshSessions(); await loadOverview(); await loadSettings(); } catch (e) { console.error(e); }

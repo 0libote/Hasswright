@@ -91,7 +91,7 @@ export class ToolGateway {
         const p = String(args.path);
         const abs = resolveAllowed(p); ensureExt(abs);
         if (!fs.existsSync(abs)) throw new Error('target file does not exist (no implicit creation for config targets)');
-        const snap = await snapshotFiles(store, `pre-edit ${p}`, [p]);
+        const snap = snapshotFiles(store, `pre-edit ${p}`, [p]);
         const cur = fs.readFileSync(abs, 'utf8');
         const oldText = toText(args.old_text);
         const newText = typeof args.new_text === 'string' ? args.new_text : JSON.stringify(args.new_text ?? args.fragment ?? args.automation ?? '');

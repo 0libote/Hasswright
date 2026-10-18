@@ -46,8 +46,8 @@ export function redactSecrets(value: unknown): unknown {
   if (typeof value === 'string') {
     // redact bearer tokens and long hex secrets conservatively
     return value
-      .replace(/(bearer\s+)[A-Z0-9._~+\/=\-]{8,}/gi, '$1[REDACTED]')
-      .replace(/(token["'\s:=]+)[A-Z0-9._~+\/=\-]{8,}/gi, '$1[REDACTED]');
+      .replace(/(bearer\s+)[A-Z0-9._~+/=-]{8,}/gi, '$1[REDACTED]')
+      .replace(/(token["'\s:=]+)[A-Z0-9._~+/=-]{8,}/gi, '$1[REDACTED]');
   }
   if (Array.isArray(value)) return value.map(redactSecrets);
   if (value && typeof value === 'object') {

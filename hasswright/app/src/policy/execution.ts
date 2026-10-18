@@ -62,7 +62,7 @@ export async function applyFileChange(
   if (expectedBefore !== undefined && current !== expectedBefore) {
     throw new Error('target changed since plan (optimistic concurrency conflict); re-plan required');
   }
-  const snapshotId = await snapshotFiles(store, `pre-edit ${plan.path}`, [plan.path]);
+  const snapshotId = snapshotFiles(store, `pre-edit ${plan.path}`, [plan.path]);
   let next: string;
   if (plan.oldText === '' && current === '') next = plan.newText;
   else if (current.includes(plan.oldText)) next = current.replace(plan.oldText, plan.newText);
