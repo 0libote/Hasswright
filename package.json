@@ -1,0 +1,20 @@
+{
+  "name": "hasswright",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hasswright: Your home. Understood. AI engineering environment for Home Assistant.",
+  "type": "module",
+  "workspaces": [
+    "hasswright/app"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace hasswright-app",
+    "test": "npm run test --workspace hasswright-app",
+    "test:all": "npm run test --workspace hasswright-app",
+    "lint": "npm run lint --workspace hasswright-app"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  }
+}

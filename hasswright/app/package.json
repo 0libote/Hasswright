@@ -1,0 +1,20 @@
+{
+  "name": "hasswright-app",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Hasswright backend + Ingress UI",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "node --watch dist/server.js",
+    "test": "tsc -p tsconfig.tests.json && node --test dist-tests/tests/*.test.js",
+    "build-tests": "tsc -p tsconfig.tests.json",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.7.0"
+  }
+}

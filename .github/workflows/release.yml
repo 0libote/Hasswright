@@ -1,0 +1,10 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Build hasswright images for amd64/aarch64 via Home Assistant builder (hab) here."

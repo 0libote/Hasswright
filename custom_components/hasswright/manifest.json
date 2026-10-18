@@ -1,0 +1,10 @@
+{
+  "domain": "hasswright",
+  "name": "Hasswright",
+  "version": "0.1.0",
+  "documentation": "https://github.com/example/hasswright",
+  "requirements": [],
+  "codeowners": ["@example"],
+  "iot_class": "local_push",
+  "config_flow": true
+}

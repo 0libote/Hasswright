@@ -1,0 +1,44 @@
+# AGENTS.md — Hasswright agent instructions
+
+This file guides AI agents (OpenCode, Codex, and Hasswright itself) working in this repo.
+
+## Project rules
+
+- Understand before changing. Read the Home Context model; never invent entity IDs, device names, or integration capabilities.
+- Prefer supported Home Assistant APIs (Core REST/WebSocket, Supervisor API) over file edits. Never write to `.storage/`, databases, or Supervisor-managed files directly.
+- All mutations go through the policy gateway (`src/policy/`): risk classification → approval → recovery point → recheck → apply → validate → verify. No bypass via shell, MCP, REST, or file writes.
+- Preserve YAML structure and comments on file edits; targeted diffs only, never full-file rewrites.
+- Redact secrets in logs, context, diffs, and tool outputs (`[REDACTED]`). Never log tokens, API keys, or `SUPERVISOR_TOKEN`.
+- Default mode is `observe` (read-only). Do not assume approval.
+- Validate: `ha check_config` equivalent (config check API) before reload/restart; template render check before saving automations/scripts.
+- Node >= 22, TypeScript strict, `node:test` + `node:assert/strict` for tests. Keep deps minimal (no native modules).
+
+## Layout
+
+- `hasswright/app/src/server.ts` — HTTP entry (Ingress), routes, auth, SSE.
+- `hasswright/app/src/agent/` — runtime adapter interface; `opencode.ts` (primary), `codex.ts` (stub/alt), `mock.ts` (tests/dev).
+- `hasswright/app/src/ha/` — `core.ts` (REST+WS), `supervisor.ts`, `capabilities.ts`.
+- `hasswright/app/src/context/` — inventory, graph, search, redaction.
+- `hasswright/app/src/tools/` — typed tool definitions + registry (`definitions.ts`, `gateway.ts`).
+- `hasswright/app/src/policy/` — risk, approvals, execution pipeline, audit.
+- `hasswright/app/src/routes/` — HTTP handlers.
+- `hasswright/app/public/` — Ingress UI (no build step).
+- `custom_components/hasswright/` — optional privileged integration (narrow API only).
+- `skills/` — reusable procedures (automation-debug, yaml-practices, etc.).
+
+## Skills
+
+Load the relevant `skills/*.md` before task families:
+- automation authoring → `skills/automation-authoring.md`
+- debugging → `skills/automation-debugging.md`
+- dashboard → `skills/dashboard-design.md`
+- templates → `skills/template-development.md`
+- supervisor/ops → `skills/supervisor-ops.md`
+- safe changes → `skills/safe-changes.md`
+
+## Verification before claiming done
+
+1. `npm test` passes (unit + integration + security).
+2. `npm run build` passes; `config.yaml` validates against Supervisor schema keys.
+3. New tools: typed schema, policy risk level, audit entry, tests for allow/deny paths.
+4. Docs updated (`docs/CAPABILITIES.md` matrix) when adding/limiting a capability.
