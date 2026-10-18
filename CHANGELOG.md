@@ -1,5 +1,9 @@
 # CHANGELOG.md
 
+## 0.1.5
+- Fix Docker build failure (`./node_modules/.bin/tsc: not found`, exit 127): `ENV NODE_ENV=production` made `npm ci` skip devDependencies including TypeScript. Added `--include=dev` to the install step; `npm prune --omit=dev` after `tsc` still keeps the final image lean.
+- Bump add-on version so Supervisor retries the build.
+
 ## 0.1.4
 - Bump add-on version so Supervisor picks up the build as a new update after the failed `0.1.3` install.
 - Sync `package-lock.json` version with `package.json` (was left at `0.1.2`).

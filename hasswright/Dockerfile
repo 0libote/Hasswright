@@ -23,8 +23,10 @@ WORKDIR /app
 # (dist/ is gitignored, so it must be built here, not COPYed).
 # NOTE (docker:S8543): package-lock.json is committed and installed with
 # `npm ci` so resolved dependency versions are locked.
+# `--include=dev` is required: ENV NODE_ENV=production above would otherwise
+# skip devDependencies (typescript), breaking the in-image `tsc` build.
 COPY app/package.json app/package-lock.json ./
-RUN npm ci --no-audit --no-fund --ignore-scripts
+RUN npm ci --include=dev --no-audit --no-fund --ignore-scripts
 COPY app/tsconfig.json ./
 COPY app/src ./src
 RUN ./node_modules/.bin/tsc -p tsconfig.json && npm prune --omit=dev --no-audit --no-fund && rm -rf src tsconfig.json
