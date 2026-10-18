@@ -9,7 +9,7 @@ An AI engineering agent for Home Assistant: it **understands** your installation
 automations, logs, repairs), **explains** what's wrong with evidence, and **changes** things only
 through approvals, backups, and validation. Default mode is read-only.
 
-> **Status:** working release (`0.1.3`). Installable on HAOS, tested with unit + integration +
+> **Status:** working release (`0.1.4`). Installable on HAOS, tested with unit + integration +
 > security suites. On-device validation checklist in `docs/DEVELOPMENT.md`.
 
 ## What it does
