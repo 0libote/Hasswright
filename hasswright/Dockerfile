@@ -1,5 +1,9 @@
-# NOTE (docker:S6471): HA add-ons run as root by platform convention (s6-overlay, /data).
-# Deliberate; reviewed as safe for this image. See SonarCloud Accepted issue if still flagged.
+# NOTE (docker:S6471): this image intentionally runs as root. Home Assistant
+# add-ons run as root by platform convention: the Supervisor bind-mounts /data
+# root-owned, so a non-root USER would break persistence on HA OS. The image is
+# single-purpose (node server on unprivileged port 8099, no shell/SSH), so this
+# was reviewed as safe. The Dockerfile parser ignores NOSONAR comments, so this
+# accepted risk is closed via "Accept" in the SonarCloud UI, not in code.
 ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:3.21
 FROM ${BUILD_FROM} AS base
 
@@ -17,8 +21,10 @@ RUN apk add --no-cache \
 WORKDIR /app
 # Install deps first for layer caching, then build TypeScript in-image
 # (dist/ is gitignored, so it must be built here, not COPYed).
-COPY app/package.json ./
-RUN npm install --no-audit --no-fund --ignore-scripts --include=dev
+# NOTE (docker:S8543): package-lock.json is committed and installed with
+# `npm ci` so resolved dependency versions are locked.
+COPY app/package.json app/package-lock.json ./
+RUN npm ci --no-audit --no-fund --ignore-scripts
 COPY app/tsconfig.json ./
 COPY app/src ./src
 RUN ./node_modules/.bin/tsc -p tsconfig.json && npm prune --omit=dev --no-audit --no-fund && rm -rf src tsconfig.json
