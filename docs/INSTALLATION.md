@@ -15,7 +15,7 @@ Labeled sample data (hallway + one unavailable sensor). Every overview response 
 1. Add this repository: Settings → Apps → ⋮ → **Repositories** → add
    `https://github.com/0libote/Hasswright` (or click **Add to Home Assistant** in the README).
 2. Install **Hasswright**, Start it, enable **Show in sidebar**.
-3. Open Hasswright → onboarding runs environment + capability check.
+3. Open Hasswright → Workspace shows inventory, attention items and connection warnings.
 4. Providers: set `opencode_base_url` (or run OpenCode alongside) and authenticate in OpenCode; or use built-in mock for read-only exploration.
 5. Default mode is `observe`. Switch to `assist`/`managed` in add-on options when ready.
 
@@ -33,19 +33,36 @@ Hasswright UI. When a new version is published (see `CHANGELOG.md` and
    approvals, audit, snapshots are preserved).
 3. If no update shows yet: **⋮ → Check for updates**, then **Settings → Apps → ⋮ →
    Reload** (refreshes the repository), and re-open the Hasswright page.
-4. Still nothing? **Rebuild** the add-on from its page, or remove/re-add the
-   `https://github.com/0libote/Hasswright` repository and restart Supervisor.
-5. Verify: open Hasswright → **Settings** → *Version & updates* shows the new
+4. If installation fails, collect the error from **Settings → System → Logs → Supervisor**,
+   plus the Hasswright app log if it started. Record installed/available versions, HAOS and
+   CPU architecture. Do not uninstall or remove persistent data to retry an update.
+5. Verify: open Hasswright → **Settings** → *Installation & updates* shows the new
    version, or check Supervisor's add-on info row.
 
 Notes:
 
-- In-app **Settings → Version & updates** shows the running version and, when the
+- In-app **Settings → Installation & updates** shows the running version and, when the
   Supervisor API is reachable, whether Supervisor reports an update. The actual
   install/restart is always done by Supervisor.
-- Backups: Supervisor takes a `hot` backup on update (`backup: hot` in
-  `config.yaml`). For extra safety, take a manual backup before major updates:
+- Backups: `backup: hot` in `config.yaml` lets the app be backed up while running; it does
+  not guarantee a backup on every update. Take or select a backup before updating:
   **Settings → System → Backups → Create backup**.
 - Version numbers: the add-on version (`hasswright/config.yaml`) and the app
   (`hasswright/app/package.json`) are kept in sync. If they differ, treat
   `config.yaml` as the source of truth for what Supervisor installs.
+
+## Build and delivery diagnostics
+
+The current add-on config has no `image` reference, so Supervisor builds it on the HA
+device. This can take longer on small hosts and needs access to npm, the container
+registries, and Alpine package mirrors. The multi-stage Dockerfile keeps build tools
+out of the runtime image; it still needs to compile once during a source installation.
+
+The prepared release workflow builds and smoke-tests amd64/aarch64 images. Prebuilt
+image delivery is activated only after versioned public images exist. See
+[the full audit and activation checklist](INSTALL-UPDATE-AUDIT.md).
+
+After a successful update, reopen the UI and compare the running version with
+Supervisor's installed/available versions. A missing bundle now fails startup with an
+explicit build error. Invalid persisted JSON stops startup without overwriting the file;
+preserve it and recover from a known-good backup.

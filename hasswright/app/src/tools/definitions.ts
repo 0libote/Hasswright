@@ -17,6 +17,6 @@ export const TOOL_DEFINITIONS: ToolSchema[] = [
   { name: 'ha.update_dashboard', description: 'Propose/apply Lovelace dashboard change.', risk: 'approval', readonly: false, params: { path: { type: 'string', required: true }, fragment: { type: 'object', required: true } } },
   { name: 'ha.write_file', description: 'Targeted config file edit with backup+validation.', risk: 'approval', readonly: false, params: { path: { type: 'string', required: true }, old_text: { type: 'string' }, new_text: { type: 'string', required: true } } },
   { name: 'ha.restart_core', description: 'Restart Home Assistant Core.', risk: 'high', readonly: false, params: {} },
-  { name: 'ha.create_backup', description: 'Create a full backup (Supervisor).', risk: 'low', readonly: false, params: { name: { type: 'string' } } },
+  { name: 'ha.create_backup', description: 'Create a full backup (Supervisor), with explicit approval.', risk: 'approval', readonly: false, params: { name: { type: 'string' } } },
   { name: 'ha.restore_backup', description: 'Restore a backup. Critical.', risk: 'critical', readonly: false, params: { slug: { type: 'string', required: true } } },
 ];

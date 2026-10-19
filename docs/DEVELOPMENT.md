@@ -31,3 +31,19 @@
 - Every file mutation takes a snapshot first; `rollbackFiles(snapshotId)` restores.
 - Validation failure auto-rolls back. Backup API for full backups before risky ops.
 - Change states surfaced in Changes view; `recovery_required` when partial.
+
+## Release and support checks
+
+- Run `npm run check:packaging` from the repository root. Config/app/lockfile versions
+  must match; tag releases must match `v<config version>`. Both lockfiles are used:
+  root CI uses the workspace lock; Docker uses the standalone app lock.
+- CI also calls `containers.yml`: native amd64/aarch64 builds must start, serve real
+  bundles, and preserve a session across container replacement using the same data mount.
+- `release.yml` publishes architecture images only after smoke tests, then creates the
+  versioned multi-arch manifest. Make packages public and verify anonymous pulls before
+  setting config's `image` reference. This revision continues source builds.
+- Docker's build stage compiles architecture-independent JS/CSS on the build host. The
+  runtime has Node and built files only; no npm, compiler, or node_modules is copied.
+- Collect Supervisor build logs, app startup logs, installed/available versions, CPU
+  architecture and HAOS version when an update fails. Do not remove `/data` to retry.
+- See `INSTALL-UPDATE-AUDIT.md` for the audit scope, remaining risks and HAOS checklist.

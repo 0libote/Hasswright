@@ -1,8 +1,6 @@
-"""Hasswright optional integration: narrow privileged API only.
+"""Placeholder optional integration that registers a config entry only.
 
-Exposes a single webhook-style view for file/YAML operations that Core
-cannot do via REST, gated by HA auth + Hasswright approval tokens.
-Optional — the add-on works without it.
+No privileged HTTP/file/YAML API is implemented. The add-on works without it.
 """
 from __future__ import annotations
 

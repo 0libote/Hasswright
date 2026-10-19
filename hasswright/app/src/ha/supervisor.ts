@@ -8,7 +8,7 @@ export class Supervisor {
   }
 
   async req(path: string, init?: RequestInit): Promise<unknown> {
-    const r = await fetch(this.baseUrl.replace(/\/$/, '') + path, { ...init, headers: this.headers() });
+    const r = await fetch(this.baseUrl.replace(/\/$/, '') + path, { ...init, signal: init?.signal ?? AbortSignal.timeout(5000), headers: this.headers() });
     if (!r.ok) throw new Error(`supervisor ${path} failed: ${r.status}`);
     return r.json().catch(() => ({}));
   }
@@ -20,7 +20,7 @@ export class Supervisor {
   addonInfo = (slug: string) => this.req(`/addons/${slug}/info`);
   addonLogs = (slug: string) => fetch(`${this.baseUrl}/addons/${slug}/logs`, { headers: this.headers() }).then((r) => r.text());
   backups = () => this.req('/backups');
-  createBackup = (name: string) => this.req('/backups/new/full', { method: 'POST', body: JSON.stringify({ name }) });
+  createBackup = (name: string) => this.req('/backups/new/full', { method: 'POST', body: JSON.stringify({ name }), signal: AbortSignal.timeout(120_000) });
   updates = () => this.req('/supervisor/update').catch(() => null);
 
   /** Best-effort read-only update check for this add-on. Never throws; returns null when unknown. */
@@ -31,13 +31,14 @@ export class Supervisor {
     updateAvailable: boolean | null;
   } | null> {
     if (!this.configured) return null;
-    const slugs = [process.env.SUPERVISOR_ADDON_SLUG || '', 'hasswright'].filter(Boolean);
+    const slugs = ['self', process.env.SUPERVISOR_ADDON_SLUG || ''].filter(Boolean);
     // Try direct info lookups first.
     for (const slug of slugs) {
       try {
         const info = await this.addonInfo(slug);
         const parsed = parseAddonInfo(info);
-        if (parsed) return { slug, ...parsed };
+        const record = asRecord(asRecord(info)?.data) ?? asRecord(info);
+        if (parsed) return { slug: typeof record?.slug === 'string' ? record.slug : slug, ...parsed };
       } catch { /* try next */ }
     }
     // Fall back to scanning the add-on list for a slug ending in hasswright.

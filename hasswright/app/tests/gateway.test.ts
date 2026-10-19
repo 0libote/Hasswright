@@ -63,7 +63,7 @@ describe('gateway policy', () => {
   it('observe mode cannot call services even with approval id', async () => {
     const store = tmpStore();
     const gw = new ToolGateway({ mode: 'observe', ha: mockHA, supervisor: mockSupervisor, store, ctx: new ContextEngine(mockHA), configDir: '' });
-    await assert.rejects(() => gw.exec('ha.call_service', { domain: 'light', service: 'turn_on' }, 'fake-id'), /approval|invalid/i);
+    await assert.rejects(() => gw.exec('ha.call_service', { domain: 'light', service: 'turn_on' }, 'fake-id'), /approval|invalid|read-only/i);
   });
   it('low-risk reads work without approval', async () => {
     const store = tmpStore();
@@ -95,5 +95,46 @@ describe('context engine', () => {
     assert.ok(inv.unavailable.some((u) => u.entity_id === 'sensor.bad'));
     assert.ok(ctx.search('kitchen').some((r) => r.entity_id === 'light.kitchen'));
     assert.deepEqual(ctx.staleReferences(['light.kitchen', 'light.ghost']), ['light.ghost']);
+  });
+});
+
+describe('audited mutation boundaries', () => {
+  it('binds approvals to exact arguments and permits a matching action only once', async () => {
+    const store = tmpStore();
+    let calls = 0;
+    const ha = { ...(mockHA as object), callService: async () => { calls++; return { ok: true }; } } as never;
+    const gw = new ToolGateway({ mode: 'assist', ha, supervisor: mockSupervisor, store, ctx: new ContextEngine(ha), configDir: '' });
+    const approvals = new Approvals(store);
+    const args = { domain: 'light', service: 'turn_on', data: { entity_id: 'light.kitchen' } };
+    const request = approvals.request('ha.call_service', args, 'high');
+    approvals.decide(request.id, true);
+    await assert.rejects(() => gw.exec('ha.call_service', { ...args, service: 'turn_off' }, request.id), /arguments mismatch/);
+    assert.equal(calls, 0);
+    await gw.exec('ha.call_service', args, request.id);
+    assert.equal(calls, 1);
+    await assert.rejects(() => gw.exec('ha.call_service', args, request.id), /expired approval/);
+    assert.equal(calls, 1);
+  });
+  it('blocks backup creation in Observe and requires a matching approval in Assist', async () => {
+    const store = tmpStore();
+    let backups = 0;
+    const supervisor = { configured: true, createBackup: async () => { backups++; return { result: 'ok' }; } } as never;
+    const make = (mode: 'observe' | 'assist') => new ToolGateway({ mode, ha: mockHA, supervisor, store, ctx: new ContextEngine(mockHA), configDir: '' });
+    await assert.rejects(() => make('observe').exec('ha.create_backup', {}), /read-only/);
+    await assert.rejects(() => make('assist').exec('ha.create_backup', {}), /approval required/);
+    assert.equal(backups, 0);
+    assert.ok(store.listAudit().some((entry) => entry.action === 'tool.denied' && entry.tool === 'ha.create_backup'));
+    const approvals = new Approvals(store);
+    const request = approvals.request('ha.create_backup', {}, 'approval');
+    approvals.decide(request.id, true);
+    await make('assist').exec('ha.create_backup', {}, request.id);
+    assert.equal(backups, 1);
+    assert.equal(store.listAudit()[0].action, 'backup.create');
+  });
+  it('marks failed home context sources instead of implying a healthy empty installation', async () => {
+    const ha = { ...(mockHA as object), getConfig: async () => { throw new Error('offline'); }, getStates: async () => { throw new Error('offline'); } } as never;
+    const inventory = await new ContextEngine(ha).inventory();
+    assert.equal(inventory.sources.states, 'unavailable');
+    assert.equal(inventory.warnings.length, 2);
   });
 });

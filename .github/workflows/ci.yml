@@ -7,25 +7,13 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version: 22 }
-      - name: Validate YAML packaging
-        run: |
-          npm install --no-save --ignore-scripts js-yaml@4.1.0
-          node -e "
-            const yaml = require('js-yaml'), fs = require('fs'), assert = require('assert');
-            for (const f of ['hasswright/config.yaml','hasswright/build.yaml','repository.yaml','.github/workflows/ci.yml']) {
-              yaml.load(fs.readFileSync(f, 'utf8')); console.log('VALID', f);
-            }
-            const cfg = yaml.load(fs.readFileSync('hasswright/config.yaml','utf8'));
-            for (const k of ['name','version','slug','description','arch','ingress','ingress_port']) assert.ok(cfg[k] !== undefined, 'missing ' + k);
-            assert.ok(cfg.arch.includes('aarch64') && cfg.arch.includes('amd64'), 'arch must cover aarch64+amd64');
-            console.log('config.yaml keys OK');
-            const appPkg = JSON.parse(fs.readFileSync('hasswright/app/package.json','utf8'));
-            assert.equal(String(cfg.version), String(appPkg.version), 'config.yaml version must match app package.json version (Supervisor installs config.yaml version)');
-            console.log('version sync OK', cfg.version);
-          "
-      - name: Dockerfile must not COPY gitignored dist
-        run: |
-          ! grep -q "COPY app/dist" hasswright/Dockerfile && echo "Dockerfile builds TS in-image OK"
       - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm run check:packaging
       - run: npm run build
       - run: npm test
+  containers:
+    needs: build-test
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/containers.yml

@@ -1,5 +1,13 @@
 # CHANGELOG.md
 
+## 0.1.7 (prepared)
+- Make the installation workspace the starting view; move conversations into an optional assistant panel.
+- Fix Supervisor Core REST/WS routing and self update detection; bound network reads and show missing data clearly.
+- Use a multi-stage, architecture-neutral build and prepare real native container smoke tests and versioned image publication.
+- Fail startup for missing UI assets or corrupt persisted data; preserve existing data across server replacement.
+- Enforce Ingress peer access, bind approvals to exact arguments, and require approval for backups.
+- Add packaging/version checks and an install/update audit with remaining production blockers.
+
 ## 0.1.6
 - Replace static Ingress UI with Astryx React + live HA theming (bundled via esbuild WASM into `public/build/`, allowlisted theme vars/fonts with system fallback).
 - Bump add-on version so Supervisor picks up the new UI build.

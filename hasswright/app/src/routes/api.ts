@@ -30,20 +30,13 @@ export function send(res: ServerResponse, code: number, body: unknown): void {
   res.end(text);
 }
 
-function needIngress(_req: IncomingMessage): boolean {
-  // Ingress provides X-Ingress-Path; direct port access requires HA bearer auth handled by supervisor proxy.
-  // We enforce same-origin + supervisor session where available; never trust model input for auth.
-  return true;
-}
-
 const SESSION_RE = /^\/api\/sessions\/([^/]+)(\/messages)?$/;
 
 export async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL, c: RouteCtx): Promise<boolean> {
   if (!url.pathname.startsWith('/api/')) return false;
-  needIngress(req);
   const method = req.method || 'GET';
 
-  if (url.pathname === '/api/health') return (send(res, 200, { ok: true, mode: c.mode, ts: Date.now(), version: ADDON_VERSION }), true);
+  if (url.pathname === '/api/health') return (send(res, 200, { ok: true, mode: c.mode, agent: c.agent.name, ts: Date.now(), version: ADDON_VERSION }), true);
   if (url.pathname === '/api/version' && method === 'GET') return (await handleVersion(req, res, c), true);
   if (await handleSessions(req, res, url, c, method)) return true;
   if (await handleContext(req, res, url, c, method)) return true;

@@ -9,15 +9,16 @@ An AI engineering agent for Home Assistant: it **understands** your installation
 automations, logs, repairs), **explains** what's wrong with evidence, and **changes** things only
 through approvals, backups, and validation. Default mode is read-only.
 
-> **Status:** working release (`0.1.6`). Installable on HAOS, tested with unit + integration +
-> security suites. On-device validation checklist in `docs/DEVELOPMENT.md`.
+> **Status:** experimental (`0.1.7` prepared). Node and lifecycle checks run locally;
+> native container and on-device validation are required before release. See the
+> [install/update audit](docs/INSTALL-UPDATE-AUDIT.md) for findings and remaining limitations.
 
 ## What it does
 
-- **Workspace** — chat with a real agent session (OpenCode primary, Codex experimental, built-in fallback).
+- **Workspace** — installation context, attention items, investigation shortcuts, approvals, updates, and recent activity. The assistant opens in a supporting panel.
 - **Overview / Explorer** — live inventory: versions, domains, unavailable entities, registries, repairs.
 - **Investigations** — error log, repair issues, automation traces with evidence-first diagnoses.
-- **Changes** — pending approvals (10-min TTL, single-use), diffs/previews, apply + validate + rollback.
+- **Changes** — review pending approvals and run policy-gated tools. Write/apply paths remain experimental; see the audit.
 - **Maintenance** — opt-in, disabled-by-default read-only checks. Never auto-repairs.
 - **Settings** — tool catalog, audit history, diagnostics.
 
@@ -39,7 +40,7 @@ You'll see a hallway with a motion light and one (intentionally) unavailable sen
 
 1. Click **Add to Home Assistant** above (or: Settings → Apps → ⋮ → **Repositories** → add `https://github.com/0libote/Hasswright`).
 2. Install **Hasswright** → Start → enable **Show in sidebar**.
-3. Open Hasswright: onboarding runs environment + capability checks.
+3. Open Hasswright to review installation context and any connection warnings.
 4. Providers: set `opencode_base_url` (or run OpenCode alongside) and sign in there; or explore read-only with the built-in assistant.
 5. You start in `observe` (read-only). Switch to `assist`/`managed` in app options when ready.
 
@@ -75,7 +76,8 @@ shows). In-app version + Supervisor update state: Hasswright → **Settings → 
 
 ```bash
 cd hasswright/app
-npm install && npm run build && npm test   # 16 tests: policy, approvals, paths, gateway, context, fixture
+npm ci && npm run build && npm test
+(cd ../.. && npm run check:packaging)
 ```
 
 Working rules for agents (and humans): [`AGENTS.md`](AGENTS.md). Please read it before contributing —

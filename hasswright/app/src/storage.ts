@@ -16,19 +16,27 @@ export class Store {
   private readonly db: DB;
 
   constructor(dataDir: string) {
-    fs.mkdirSync(dataDir, { recursive: true });
+    fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
     this.file = path.join(dataDir, 'hasswright.json');
     this.db = { sessions: {}, approvals: {}, audit: [], settings: {}, snapshots: {} };
     try {
       const raw = fs.readFileSync(this.file, 'utf8');
       const parsed = JSON.parse(raw) as Partial<DB>;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid store');
+      for (const key of ['sessions', 'approvals', 'settings', 'snapshots'] as const) {
+        if (parsed[key] !== undefined && (!parsed[key] || typeof parsed[key] !== 'object' || Array.isArray(parsed[key]))) throw new Error('invalid store');
+      }
+      if (parsed.audit !== undefined && !Array.isArray(parsed.audit)) throw new Error('invalid store');
       this.db = { ...this.db, ...parsed };
-    } catch { /* fresh */ }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('Cannot load persisted Hasswright data; preserve /data/hasswright.json and restore a known-good backup before restarting');
+    }
   }
 
   private save(): void {
     const tmp = this.file + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(this.db, null, 2));
+    fs.writeFileSync(tmp, JSON.stringify(this.db, null, 2), { mode: 0o600 });
+    fs.chmodSync(tmp, 0o600);
     fs.renameSync(tmp, this.file);
   }
 

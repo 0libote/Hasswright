@@ -10,6 +10,8 @@ export interface Inventory {
   failedIntegrations: string[];
   repairs: unknown;
   stale: boolean;
+  sources: { core: 'available' | 'unavailable'; states: 'available' | 'unavailable' };
+  warnings: string[];
 }
 
 export interface GraphNode { id: string; kind: string; label: string }
@@ -29,10 +31,15 @@ export class ContextEngine {
 
   async inventory(force = false): Promise<Inventory> {
     if (this.cache && !force && Date.now() - this.cache.takenAt < 60_000) return this.markFresh(this.cache);
-    const [config, states] = await Promise.all([
-      this.ha.getConfig().catch(() => null),
-      this.ha.getStates().catch(() => []),
+    const [configResult, statesResult] = await Promise.allSettled([
+      this.ha.getConfig(),
+      this.ha.getStates(),
     ]);
+    const config = configResult.status === 'fulfilled' ? configResult.value : null;
+    const states = statesResult.status === 'fulfilled' ? statesResult.value : [];
+    const warnings: string[] = [];
+    if (configResult.status === 'rejected') warnings.push('Home Assistant configuration could not be read. Check API access and app logs.');
+    if (statesResult.status === 'rejected') warnings.push('Entity states are unavailable; inventory counts do not represent the current home.');
     const regs = await this.ha.wsRegistries().catch(() => ({ devices: [], entities: [], areas: [] }));
     this.states = states as typeof this.states;
     this.devices = (regs.devices as unknown[]) || [];
@@ -57,6 +64,8 @@ export class ContextEngine {
       },
       domains, unavailable: unavailable.slice(0, 200), failedIntegrations: [],
       repairs, stale: false,
+      sources: { core: configResult.status === 'fulfilled' ? 'available' : 'unavailable', states: statesResult.status === 'fulfilled' ? 'available' : 'unavailable' },
+      warnings,
     };
     this.cache = inv;
     return inv;

@@ -22,7 +22,7 @@ export class HACore {
     const url = this.baseUrl.replace(/\/$/, '') + path;
     const extra = (init?.headers ?? {}) as Record<string, string>;
     const auth: Record<string, string> = this.token ? { Authorization: `Bearer ${this.token}` } : {};
-    return fetch(url, { ...init, headers: { ...extra, ...auth } });
+    return fetch(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(15_000), headers: { ...extra, ...auth } });
   }
 
   async getConfig(): Promise<unknown> {
@@ -81,13 +81,14 @@ export class HACore {
 
   // WebSocket: minimal one-shot command helper over HA WS API.
   async wsCommand(message: Record<string, unknown>, timeoutMs = 8000): Promise<unknown> {
-    const wsUrl = this.baseUrl.replace(/^http/, 'ws') + '/api/websocket';
+    const wsUrl = homeAssistantWebSocketUrl(this.baseUrl);
     const WS = (globalThis as unknown as { WebSocket?: typeof WebSocket }).WebSocket;
     if (!WS) throw new Error('WebSocket not available in this runtime');
     return new Promise((resolve, reject) => {
       const ws = new WS(wsUrl);
       let id = 1;
-      const timer = setTimeout(() => { try { ws.close(); } catch {} reject(new Error('WS timeout')); }, timeoutMs);
+      const fail = (error: Error) => { clearTimeout(timer); reject(error); try { ws.close(); } catch {} };
+      const timer = setTimeout(() => fail(new Error('WS timeout')), timeoutMs);
       ws.onmessage = (ev: MessageEvent) => {
         try {
           const msg = JSON.parse(String(ev.data));
@@ -95,15 +96,18 @@ export class HACore {
             ws.send(JSON.stringify({ type: 'auth', access_token: this.token }));
           } else if (msg.type === 'auth_ok') {
             ws.send(JSON.stringify({ id: id++, ...message }));
+          } else if (msg.type === 'auth_invalid') {
+            fail(new Error('HA WebSocket authentication failed'));
           } else if (msg.type === 'result') {
             clearTimeout(timer);
             ws.close();
             if (msg.success) resolve(msg.result);
             else reject(new Error(msg.error?.message || 'WS command failed'));
           }
-        } catch (e) { clearTimeout(timer); reject(e); }
+        } catch { fail(new Error('Invalid HA WebSocket response')); }
       };
-      ws.onerror = () => { clearTimeout(timer); reject(new Error('WS error')); };
+      ws.onerror = () => fail(new Error('WS error'));
+      ws.onclose = () => { clearTimeout(timer); reject(new Error('HA WebSocket closed before returning a result')); };
     });
   }
 
@@ -127,6 +131,14 @@ export class HACore {
     if (this.fixture) return { issues: [{ issue_id: 'demo_unavailable_sensor', translation_key: 'Sample repair (demo fixture)' }] };
     return this.wsCommand({ type: 'repairs/list_issues' }).catch(() => ({ issues: [] }));
   }
+}
+
+export function homeAssistantWebSocketUrl(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  const base = url.pathname.replace(/\/$/, '');
+  url.pathname = base.endsWith('/core') ? `${base}/websocket` : `${base}/api/websocket`;
+  return url.toString();
 }
 
 // ---------------------------------------------------------------------------

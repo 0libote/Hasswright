@@ -18,7 +18,7 @@ const TOOL_RISK: Record<string, Risk> = {
   'ha.update_dashboard': 'approval',
   'ha.write_file': 'approval',
   'ha.restart_core': 'high',
-  'ha.create_backup': 'low',
+  'ha.create_backup': 'approval',
   'ha.restore_backup': 'critical',
 };
 

@@ -1,0 +1,8 @@
+app/node_modules
+app/dist
+app/dist-tests
+app/public/build
+app/.hasswright-data
+app/tests
+**/*.log
+.git

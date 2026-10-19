@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import type { HACore } from '../ha/core.js';
 import type { Supervisor } from '../ha/supervisor.js';
 import type { Store } from '../storage.js';
@@ -27,8 +28,17 @@ export class ToolGateway {
   }
 
   private check(tool: string, args: Record<string, unknown>, approvalId?: string): { approved: boolean } {
+    try { return this.authorize(tool, args, approvalId); }
+    catch (error) {
+      storeDenial(this.o.store, tool, error);
+      throw error;
+    }
+  }
+
+  private authorize(tool: string, args: Record<string, unknown>, approvalId?: string): { approved: boolean } {
     const risk = classify(tool, args);
     if (risk === 'low') return { approved: true };
+    if (this.o.mode === 'observe') throw Object.assign(new Error('observe mode is read-only'), { code: 'DENIED' });
     if (!approvalId) {
       const gate = mayExecute(this.o.mode, risk, false);
       if (!gate.ok) throw Object.assign(new Error(gate.reason), { code: 'APPROVAL_REQUIRED', risk });
@@ -39,6 +49,7 @@ export class ToolGateway {
       throw Object.assign(new Error('invalid or expired approval'), { code: 'APPROVAL_INVALID' });
     }
     if (a.tool !== tool) throw Object.assign(new Error('approval tool mismatch'), { code: 'APPROVAL_MISMATCH' });
+    if (!isDeepStrictEqual(a.args, args)) throw Object.assign(new Error('approval arguments mismatch; request a new approval'), { code: 'APPROVAL_MISMATCH' });
     const gate = mayExecute(this.o.mode, risk, true);
     if (!gate.ok) throw Object.assign(new Error(gate.reason), { code: 'DENIED' });
     // consume single-use
@@ -102,8 +113,11 @@ export class ToolGateway {
         return { ok: true, snapshotId: snap, validation };
       }
       case 'ha.create_backup': {
+        this.check(tool, args, approvalId);
         if (!supervisor.configured) return { ok: false, reason: 'supervisor not available (demo or missing token)' };
-        return supervisor.createBackup(toText(args.name) || `hasswright-${Date.now()}`);
+        const backup = await supervisor.createBackup(toText(args.name) || `hasswright-${Date.now()}`);
+        store.audit({ ts: Date.now(), actor: 'agent', action: 'backup.create', tool, result: 'ok' });
+        return backup;
       }
       case 'ha.restart_core': {
         this.check(tool, args, approvalId);
@@ -116,6 +130,10 @@ export class ToolGateway {
       default: throw new Error(`unknown tool: ${tool}`);
     }
   }
+}
+
+function storeDenial(store: Store, tool: string, error: unknown): void {
+  store.audit({ ts: Date.now(), actor: 'policy', action: 'tool.denied', tool, result: 'denied', detail: (error as { code?: string }).code || 'DENIED' });
 }
 
 function toText(v: unknown): string {

@@ -11,10 +11,14 @@
     "build": "npm run build --workspace hasswright-app",
     "test": "npm run test --workspace hasswright-app",
     "test:all": "npm run test --workspace hasswright-app",
-    "lint": "npm run lint --workspace hasswright-app"
+    "lint": "npm run lint --workspace hasswright-app",
+    "check:packaging": "node scripts/check-packaging.mjs"
   },
   "license": "MIT",
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "js-yaml": "5.5.0"
   }
 }
