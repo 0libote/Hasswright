@@ -6,7 +6,6 @@ import { Button } from "@astryxdesign/core/Button";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import {
   ChatComposer,
-  ChatLayout,
   ChatMessage,
   ChatMessageBubble,
   ChatMessageList,
@@ -161,7 +160,7 @@ function App() {
   });
   const [view, setView] = useState<View>("Workspace");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [focusTask, setFocusTask] = useState(0);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -174,17 +173,19 @@ function App() {
   const mode = health.data?.mode;
   useEffect(() => connectHomeAssistantTheme(setTheme), []);
   useEffect(() => {
-    if (!menuOpen && !assistantOpen) return;
+    if (!menuOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
-        setAssistantOpen(false);
         document.querySelector<HTMLButtonElement>(".mobile-menu")?.focus();
       }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [menuOpen, assistantOpen]);
+  }, [menuOpen]);
+  useEffect(() => {
+    if (focusTask) document.getElementById("task-instructions")?.focus();
+  }, [focusTask]);
   useEffect(() => {
     let active = true;
     api<{ sessions: ChatSession[] }>("sessions")
@@ -215,17 +216,16 @@ function App() {
       ...current.filter((item) => item.id !== next.id),
     ]);
   }
-  async function newSession() {
+  function workOnTask(prompt?: string) {
+    navigate("Workspace");
+    if (prompt !== undefined) setDraft(prompt);
+    setFocusTask((current) => current + 1);
+  }
+  function newSession() {
     if (sending.current) return;
+    setSession(null);
     setError("");
-    try {
-      const { body } = await api<{ session: ChatSession }>("sessions", {});
-      saveSession(body.session);
-      setDraft("");
-      setAssistantOpen(true);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+    workOnTask("");
   }
   async function send(content: string) {
     const text = content.trim();
@@ -271,6 +271,7 @@ function App() {
         ],
       });
     } catch (e) {
+      if (activeSession) saveSession(activeSession);
       setError((e as Error).message);
       setDraft(text);
     } finally {
@@ -355,11 +356,13 @@ function App() {
             </div>
             <div className="topbar-actions">
               <Button
-                label={assistantOpen ? "Close assistant" : "Ask assistant"}
+                label={view === "Workspace" ? "New task" : "Work on a task"}
                 variant="secondary"
-                aria-expanded={assistantOpen}
-                aria-controls="assistant-panel"
-                onClick={() => setAssistantOpen(!assistantOpen)}
+                icon={<Icon name="plus" />}
+                isDisabled={busy}
+                onClick={() =>
+                  view === "Workspace" ? newSession() : workOnTask()
+                }
               />
               <span className="mode-pill">
                 <span className="status-dot" />
@@ -374,10 +377,12 @@ function App() {
           <main id="main" tabIndex={-1} className="page">
             <div className="page-heading">
               <div>
-                <p className="eyebrow">HOME ASSISTANT</p>
+                {view !== "Workspace" && (
+                  <p className="eyebrow">Home Assistant</p>
+                )}
                 <h1>
                   {view === "Workspace"
-                    ? "Installation workspace"
+                    ? "Workspace"
                     : view === "Overview"
                       ? "Inventory"
                       : view}
@@ -390,10 +395,30 @@ function App() {
                 resource={overview}
                 mode={mode}
                 navigate={navigate}
-                ask={(prompt) => {
-                  setDraft(prompt);
-                  setAssistantOpen(true);
-                }}
+                ask={workOnTask}
+                workbench={
+                  <TaskWorkbench
+                    session={session}
+                    sessions={sessions}
+                    sessionLoading={sessionLoading}
+                    busy={busy}
+                    draft={draft}
+                    setDraft={setDraft}
+                    send={send}
+                    error={error}
+                    mode={mode}
+                    agent={health.data?.agent}
+                    navigate={navigate}
+                    newTask={newSession}
+                    selectSession={(id) => {
+                      setSession(
+                        sessions.find((item) => item.id === id) || null,
+                      );
+                      setDraft("");
+                      setError("");
+                    }}
+                  />
+                }
               />
             )}
             {view === "Overview" && <OverviewView resource={overview} />}
@@ -404,206 +429,12 @@ function App() {
             {view === "Settings" && <SettingsView theme={theme} />}
           </main>
         </div>
-        {assistantOpen && (
-          <aside
-            id="assistant-panel"
-            className="assistant-panel"
-            aria-label="Installation assistant"
-          >
-            <div className="assistant-heading">
-              <div>
-                <p className="eyebrow">WORKSPACE ASSISTANT</p>
-                <h2>Ask Hasswright</h2>
-                <small className="muted">
-                  {health.data?.agent === "mock"
-                    ? "Built-in example assistant"
-                    : health.data?.agent
-                      ? `Adapter: ${health.data.agent}`
-                      : "Checking assistant…"}
-                </small>
-              </div>
-              <Button
-                label="Close assistant panel"
-                variant="ghost"
-                onClick={() => setAssistantOpen(false)}
-              />
-            </div>
-            <div className="assistant-sessions">
-              <label className="sr-only" htmlFor="assistant-session">
-                Conversation
-              </label>
-              <select
-                id="assistant-session"
-                value={session?.id || ""}
-                disabled={busy || sessionLoading}
-                onChange={(event) => {
-                  setSession(
-                    sessions.find((item) => item.id === event.target.value) ||
-                      null,
-                  );
-                  setDraft("");
-                  setError("");
-                }}
-              >
-                <option value="" disabled>
-                  Select a conversation
-                </option>
-                {sessions.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title || "New conversation"}
-                  </option>
-                ))}
-              </select>
-              <Button
-                label="New"
-                clickAction={newSession}
-                isDisabled={busy || sessionLoading}
-              />
-            </div>
-            {error && (
-              <div className="error-banner" role="alert">
-                {error}
-                <Button
-                  label="Dismiss"
-                  variant="ghost"
-                  onClick={() => setError("")}
-                />
-              </div>
-            )}
-            <ChatLayout
-              className="chat-layout"
-              density="compact"
-              composer={
-                <div className="composer-wrap">
-                  <ChatComposer
-                    value={draft}
-                    onChange={setDraft}
-                    onSubmit={(text) => void send(text)}
-                    isDisabled={busy || sessionLoading}
-                    placeholder="Ask anything about your home…"
-                    elevation="none"
-                    footerActions={
-                      <span className="composer-context">
-                        <Icon name="Overview" size={15} />
-                        Home Assistant context
-                      </span>
-                    }
-                    sendActions={
-                      draft && !busy ? (
-                        <Button
-                          label="Clear draft"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDraft("")}
-                        />
-                      ) : undefined
-                    }
-                    status={
-                      busy
-                        ? {
-                            type: "warning",
-                            message: "Hasswright is working…",
-                          }
-                        : undefined
-                    }
-                  />
-                  <p className="composer-hint">
-                    {mode === "observe"
-                      ? "Observe mode is read-only. Changes are blocked."
-                      : mode
-                        ? "Changes go through the policy gateway and may need approval."
-                        : "Checking policy mode…"}{" "}
-                    <button
-                      className="text-link"
-                      onClick={() => navigate("Changes")}
-                    >
-                      Review changes
-                    </button>
-                  </p>
-                </div>
-              }
-            >
-              <ChatMessageList
-                align="top"
-                isStreaming={busy}
-                emptyState={
-                  <div className="assistant-empty">
-                    <Icon name="Workspace" size={25} />
-                    <h3>Help with your installation</h3>
-                    <p className="muted">
-                      Ask about the evidence in your workspace, investigate an
-                      entity, or plan a change.
-                    </p>
-                    <Button
-                      label="Explain this view"
-                      variant="ghost"
-                      onClick={() =>
-                        setDraft(
-                          `Help me understand the ${view === "Overview" ? "inventory" : view.toLowerCase()} view using my current Home Assistant context.`,
-                        )
-                      }
-                    />
-                  </div>
-                }
-              >
-                {session?.messages.length || busy ? (
-                  <>
-                    {(session?.messages || []).map((message, index) => (
-                      <ChatMessage
-                        key={`${session?.id}-${index}`}
-                        sender={
-                          message.role === "tool" ? "system" : message.role
-                        }
-                        avatar={
-                          message.role === "assistant" ? (
-                            <span className="assistant-avatar">
-                              <Icon name="Overview" size={18} />
-                            </span>
-                          ) : undefined
-                        }
-                      >
-                        <ChatMessageBubble
-                          variant={message.role === "user" ? "filled" : "ghost"}
-                          name={
-                            message.role === "assistant"
-                              ? "Hasswright"
-                              : undefined
-                          }
-                          metadata={
-                            <ChatMessageMetadata
-                              timestamp={new Date(
-                                message.ts,
-                              ).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            />
-                          }
-                        >
-                          <div className="message-text">{message.content}</div>
-                        </ChatMessageBubble>
-                      </ChatMessage>
-                    ))}
-                    {busy && (
-                      <ChatMessage sender="assistant" name="Hasswright">
-                        <p className="thinking" role="status">
-                          Reading context and preparing a response…
-                        </p>
-                      </ChatMessage>
-                    )}
-                  </>
-                ) : null}
-              </ChatMessageList>
-            </ChatLayout>
-          </aside>
-        )}
       </div>
     </Theme>
   );
 }
 const descriptions: Record<View, string> = {
-  Workspace:
-    "Review your home, investigate issues, and track changes from one place.",
+  Workspace: "Describe a task, inspect the evidence, and review changes here.",
   Overview: "A clear view of the context available from your home.",
   Explorer: "Find entities and inspect their dependencies.",
   Investigations:
@@ -612,222 +443,471 @@ const descriptions: Record<View, string> = {
   Maintenance: "Keep an eye on your home’s health.",
   Settings: "Appearance, capabilities, and installation details.",
 };
+function TaskWorkbench({
+  session,
+  sessions,
+  sessionLoading,
+  busy,
+  draft,
+  setDraft,
+  send,
+  error,
+  mode,
+  agent,
+  navigate,
+  newTask,
+  selectSession,
+}: {
+  session: ChatSession | null;
+  sessions: ChatSession[];
+  sessionLoading: boolean;
+  busy: boolean;
+  draft: string;
+  setDraft: (value: string) => void;
+  send: (text: string) => Promise<void>;
+  error: string;
+  mode?: string;
+  agent?: string;
+  navigate: (view: View) => void;
+  newTask: () => void;
+  selectSession: (id: string) => void;
+}) {
+  const transcript = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = transcript.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [session?.id, session?.messages.length, busy]);
+  const hasMessages = Boolean(session?.messages.length);
+  return (
+    <section className="task-workbench" aria-labelledby="task-heading">
+      <div className="task-heading">
+        <h2 id="task-heading">What do you want to do?</h2>
+        {sessions.length > 0 && (
+          <div className="task-history">
+            <label className="sr-only" htmlFor="recent-tasks">
+              Recent tasks
+            </label>
+            <select
+              id="recent-tasks"
+              value={session?.id || ""}
+              disabled={busy || sessionLoading}
+              onChange={(event) => selectSession(event.target.value)}
+            >
+              <option value="">New task</option>
+              {sessions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title || "Untitled task"}
+                </option>
+              ))}
+            </select>
+            {hasMessages && (
+              <Button
+                label="New task"
+                variant="ghost"
+                size="sm"
+                isDisabled={busy}
+                onClick={newTask}
+              />
+            )}
+          </div>
+        )}
+      </div>
+      <p className="task-description muted">
+        Tell Hasswright what to investigate, build, or change.
+      </p>
+      <ChatComposer
+        className="task-composer"
+        value={draft}
+        onChange={setDraft}
+        onSubmit={(text) => void send(text)}
+        isDisabled={busy || sessionLoading}
+        elevation="none"
+        input={
+          <textarea
+            id="task-instructions"
+            aria-label="Task instructions"
+            className="task-input"
+            rows={3}
+            placeholder="Describe the problem or change you want…"
+            value={draft}
+            disabled={busy || sessionLoading}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+                void send(draft);
+              }
+            }}
+          />
+        }
+        footerActions={
+          <span className="composer-context">
+            {mode === "observe"
+              ? "Observe mode: inspect and plan"
+              : mode
+                ? "Changes go through approval"
+                : "Checking mode…"}
+          </span>
+        }
+        sendButton={
+          <Button
+            label={
+              busy ? "Working…" : hasMessages ? "Continue task" : "Start task"
+            }
+            variant="primary"
+            isLoading={busy}
+            isDisabled={busy || sessionLoading || !draft.trim()}
+            onClick={() => void send(draft)}
+          />
+        }
+      />
+      <div className="task-starters">
+        <span className="muted">Start with</span>
+        <Button
+          label="Investigate a problem"
+          variant="ghost"
+          size="sm"
+          isDisabled={busy}
+          onClick={() => {
+            setDraft(
+              "Help me investigate a problem in my Home Assistant installation. Start with the current context and identify the evidence we need.",
+            );
+            document.getElementById("task-instructions")?.focus();
+          }}
+        />
+        <Button
+          label="Plan an automation"
+          variant="ghost"
+          size="sm"
+          isDisabled={busy}
+          onClick={() => {
+            setDraft(
+              "Help me plan an automation using my existing Home Assistant entities. Ask me what it should do before drafting it.",
+            );
+            document.getElementById("task-instructions")?.focus();
+          }}
+        />
+      </div>
+      {agent === "mock" && (
+        <p className="runtime-note muted">
+          Example assistant is active.{" "}
+          <button className="text-link" onClick={() => navigate("Settings")}>
+            Connect an AI runtime
+          </button>{" "}
+          for AI tasks. The tools below work directly.
+        </p>
+      )}
+      {agent === "codex" && (
+        <p className="runtime-note muted">
+          The Codex adapter is a placeholder.{" "}
+          <button className="text-link" onClick={() => navigate("Settings")}>
+            Connect OpenCode
+          </button>{" "}
+          for AI tasks.
+        </p>
+      )}
+      {error && (
+        <div className="notice task-error" role="alert">
+          {error}
+        </div>
+      )}
+      {(hasMessages || busy) && (
+        <div className="task-output">
+          <div className="task-output-heading">
+            <h3>{session?.title || "Current task"}</h3>
+            <span className="muted">
+              {busy
+                ? "Working…"
+                : error
+                  ? "Request failed"
+                  : "Response received"}
+            </span>
+          </div>
+          <div ref={transcript} className="task-transcript">
+            <ChatMessageList align="top" isStreaming={busy}>
+              {session?.messages.length || busy ? (
+                <>
+                  {session?.messages.map((message, index) => (
+                    <ChatMessage
+                      key={`${session.id}-${index}`}
+                      sender={message.role === "tool" ? "system" : message.role}
+                    >
+                      <ChatMessageBubble
+                        variant="ghost"
+                        name={
+                          message.role === "assistant"
+                            ? "Hasswright"
+                            : message.role === "user"
+                              ? "You"
+                              : undefined
+                        }
+                        metadata={
+                          <ChatMessageMetadata
+                            timestamp={new Date(message.ts).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" },
+                            )}
+                          />
+                        }
+                      >
+                        <div className="message-text">{message.content}</div>
+                      </ChatMessageBubble>
+                    </ChatMessage>
+                  ))}
+                  {busy && (
+                    <p className="thinking" role="status">
+                      Reading context and preparing a response…
+                    </p>
+                  )}
+                </>
+              ) : null}
+            </ChatMessageList>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 function WorkspaceView({
   resource,
   mode,
   navigate,
   ask,
+  workbench,
 }: {
   resource: ReturnType<typeof useResource<{ overview: Overview }>>;
   mode?: string;
   navigate: (view: View) => void;
   ask: (prompt: string) => void;
+  workbench: ReactNode;
 }) {
   const approvals = useResource<{ approvals: Approval[] }>("approvals");
-  const audit = useResource<{ audit: AuditEntry[] }>("audit");
+  const [quickResult, setQuickResult] = useState<{
+    title: string;
+    tool: string;
+    result: unknown;
+  }>();
+  const [quickError, setQuickError] = useState("");
+  const [quickBusy, setQuickBusy] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
   const inv = resource.data?.overview;
+  const core = inv?.core as { location_name?: string; version?: string } | null;
   const pending = approvals.data?.approvals.filter(
     (item) => item.status === "pending" && item.expiresAt > Date.now(),
   );
-  const core = inv?.core as { location_name?: string; version?: string } | null;
+  async function runCheck(tool: string, title: string) {
+    if (quickBusy) return;
+    setQuickBusy(tool);
+    setQuickError("");
+    setQuickResult(undefined);
+    try {
+      const { body } = await api<{ result: unknown }>("tools/exec", {
+        tool,
+        args: tool === "ha.get_log" ? { max_chars: 6000 } : {},
+      });
+      setQuickResult({ title, tool, result: body.result });
+    } catch (error) {
+      setQuickError((error as Error).message);
+    } finally {
+      setQuickBusy("");
+    }
+  }
+  const validation =
+    quickResult?.tool === "ha.check_config"
+      ? (quickResult.result as { result?: string; errors?: unknown } | null)
+      : undefined;
   return (
-    <>
-      <ResourceStatus resource={resource} />
-      {inv?.demoFixture && (
-        <Notice>Demo fixture · Showing sample home data.</Notice>
-      )}
-      {inv?.warnings?.map((warning) => (
-        <Notice key={warning}>{warning}</Notice>
-      ))}
-      <div className="workspace-summary">
-        <div>
-          <span className="status-dot" />
-          <strong>
-            {core?.location_name || "Home Assistant installation"}
-          </strong>
-          <span className="muted">
-            {core?.version
-              ? `Core ${core.version}`
-              : "Core version unavailable"}
-          </span>
-        </div>
-        <Button
-          label="Refresh context"
-          clickAction={resource.load}
-          isLoading={resource.loading}
-        />
-      </div>
-      <div className="stats-grid">
-        {[
-          [
-            "Entities",
-            inv?.sources?.states === "unavailable"
-              ? undefined
-              : inv?.counts.entities,
-          ],
-          ["Devices", inv?.counts.devices],
-          ["Areas", inv?.counts.areas],
-          ["Awaiting review", pending?.length],
-        ].map(([label, count]) => (
-          <div className="stat panel" key={String(label)}>
-            <span className="muted">{label}</span>
-            <strong>{count ?? "—"}</strong>
+    <div className="work-area">
+      <div className="work-main">
+        {workbench}
+        <section
+          className="direct-tools"
+          aria-labelledby="direct-tools-heading"
+        >
+          <h2 id="direct-tools-heading">Run a check or open a tool</h2>
+          <div className="direct-tool-actions">
+            <Button
+              label="Check configuration"
+              icon={<Icon name="Changes" />}
+              isLoading={quickBusy === "ha.check_config"}
+              isDisabled={Boolean(quickBusy)}
+              clickAction={() =>
+                runCheck("ha.check_config", "Configuration check")
+              }
+            />
+            <Button
+              label="Read error log"
+              icon={<Icon name="Investigations" />}
+              isLoading={quickBusy === "ha.get_log"}
+              isDisabled={Boolean(quickBusy)}
+              clickAction={() => runCheck("ha.get_log", "Error log")}
+            />
+            <Button
+              label="Find an entity"
+              icon={<Icon name="Explorer" />}
+              onClick={() => navigate("Explorer")}
+            />
+            <Button
+              label="Review changes"
+              icon={<Icon name="Changes" />}
+              onClick={() => navigate("Changes")}
+            />
           </div>
+          {quickError && (
+            <div className="notice" role="alert">
+              {quickError}
+            </div>
+          )}
+          {quickResult && (
+            <div className="check-result" role="status">
+              <h3>{quickResult.title}</h3>
+              {quickResult.tool === "ha.get_log" &&
+              typeof quickResult.result === "string" ? (
+                <pre className="json">
+                  {quickResult.result || "No log text was returned."}
+                </pre>
+              ) : (
+                <>
+                  <p>
+                    {validation?.result === "valid"
+                      ? "Home Assistant reports that the configuration is valid."
+                      : validation?.result === "invalid"
+                        ? "Home Assistant found configuration errors. Review the details before making changes."
+                        : "The configuration check could not be completed. Review the connection and details."}
+                  </p>
+                  <details>
+                    <summary>Details</summary>
+                    <Json value={quickResult.result} />
+                  </details>
+                </>
+              )}
+            </div>
+          )}
+        </section>
+        <ResourceStatus resource={resource} />
+        {inv?.warnings?.map((warning) => (
+          <Notice key={warning}>{warning}</Notice>
         ))}
+        <details className="workspace-details">
+          <summary>Installation & updates</summary>
+          <VersionPanel />
+        </details>
       </div>
-      <div className="workspace-columns">
-        <div>
-          <Panel
-            title="Needs attention"
-            action={
-              <Button
-                label="Investigate"
-                variant="ghost"
-                onClick={() => navigate("Investigations")}
-              />
-            }
-          >
-            {!inv ? (
-              <p className="muted">Waiting for home context.</p>
-            ) : inv.sources?.states === "unavailable" ? (
-              <p className="muted">
-                Entity availability could not be checked. Review the connection
-                and try again.
-              </p>
-            ) : inv.unavailable.length ? (
-              <div className="entity-list">
-                {inv.unavailable.slice(0, 6).map((entity) => (
-                  <div className="entity-row" key={entity.entity_id}>
-                    <div>
-                      <code>{entity.entity_id}</code>
-                      <small className="muted">{entity.state}</small>
-                    </div>
+      <aside className="work-context" aria-label="Home context">
+        <Panel
+          title={core?.location_name || "Home context"}
+          action={
+            <Button
+              label="Refresh home context"
+              variant="ghost"
+              size="sm"
+              isLoading={resource.loading || refreshing}
+              clickAction={async () => {
+                setRefreshing(true);
+                setRefreshError("");
+                try {
+                  resource.setData(
+                    (await api<{ overview: Overview }>("overview?refresh=1"))
+                      .body,
+                  );
+                } catch (error) {
+                  setRefreshError((error as Error).message);
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+            >
+              Refresh
+            </Button>
+          }
+        >
+          {refreshError && <Notice>{refreshError}</Notice>}
+          {inv?.demoFixture && <span className="chip">Demo data</span>}
+          {core?.version && (
+            <p className="muted">Home Assistant {core.version}</p>
+          )}
+          <dl className="context-counts">
+            {[
+              [
+                "Entities",
+                inv?.sources?.states === "unavailable"
+                  ? undefined
+                  : inv?.counts.entities,
+              ],
+              ["Devices", inv?.counts.devices],
+              ["Areas", inv?.counts.areas],
+            ].map(([label, count]) => (
+              <div key={String(label)}>
+                <dt>{label}</dt>
+                <dd>{count ?? "—"}</dd>
+              </div>
+            ))}
+          </dl>
+          <Button
+            label="Explore inventory"
+            variant="ghost"
+            onClick={() => navigate("Overview")}
+          />
+        </Panel>
+        <Panel title="Needs attention">
+          {!inv ? (
+            <p className="muted">Loading home context…</p>
+          ) : inv.sources?.states === "unavailable" ? (
+            <p className="muted">Entity availability could not be checked.</p>
+          ) : inv.unavailable.length ? (
+            <div className="attention-list">
+              {inv.unavailable.slice(0, 3).map((entity) => (
+                <div className="attention-item" key={entity.entity_id}>
+                  <code>{entity.entity_id}</code>
+                  <div>
+                    <small className="muted">{entity.state}</small>
                     <Button
-                      label="Investigate entity"
+                      label={`Investigate ${entity.entity_id}`}
                       variant="ghost"
+                      size="sm"
                       onClick={() =>
                         ask(
                           `Investigate why ${entity.entity_id} is ${entity.state}. Use the available evidence and propose read-only checks.`,
                         )
                       }
-                    />
+                    >
+                      Investigate
+                    </Button>
                   </div>
-                ))}
-                {inv.unavailable.length > 6 && (
-                  <p className="muted">
-                    {inv.unavailable.length - 6} more entities in Inventory.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="muted">
-                No unavailable or unknown entities were returned by the current
-                inventory.
-              </p>
-            )}
-          </Panel>
-          <Panel title="Work on your home">
-            <div className="workflow-grid">
-              {(
-                [
-                  [
-                    "Explorer",
-                    "Find an entity",
-                    "Search states and inspect dependencies.",
-                  ],
-                  [
-                    "Investigations",
-                    "Read the evidence",
-                    "Inspect error logs, repairs, and automation traces.",
-                  ],
-                  [
-                    "Changes",
-                    "Review a change",
-                    "Check proposed actions and approval requests.",
-                  ],
-                  [
-                    "Overview",
-                    "Explore inventory",
-                    "See devices, areas, and entity domains.",
-                  ],
-                ] as const
-              ).map(([view, title, detail]) => (
-                <button
-                  className="workflow-card"
-                  key={view}
-                  onClick={() => navigate(view)}
-                >
-                  <Icon name={view} />
-                  <strong>{title}</strong>
-                  <span className="muted">{detail}</span>
-                  <span className="workflow-arrow" aria-hidden="true">
-                    →
-                  </span>
-                </button>
+                </div>
               ))}
             </div>
-          </Panel>
-          <Panel
-            title="Recent activity"
-            action={
-              <Button
-                label="Audit history"
-                variant="ghost"
-                onClick={() => navigate("Settings")}
-              />
-            }
-          >
-            <ResourceStatus resource={audit} />
-            {audit.data?.audit.length === 0 && (
-              <p className="muted">No activity recorded yet.</p>
-            )}
-            {audit.data?.audit.slice(0, 4).map((entry, index) => (
-              <div className="audit-row" key={index}>
-                <div>
-                  <strong>{entry.tool || entry.action}</strong>
-                  <small className="muted">
-                    {new Date(entry.ts).toLocaleString()}
-                  </small>
-                </div>
-                <span className="chip">{entry.result}</span>
-              </div>
-            ))}
-          </Panel>
-        </div>
-        <div>
-          <Panel title="Change control">
-            <ResourceStatus resource={approvals} />
-            <span className="chip">{mode || "Checking mode…"}</span>
-            <p>
-              {mode === "observe"
-                ? "Your workspace is read-only. Mutations are blocked in Observe mode."
-                : "Actions are checked by the policy gateway. Review required approvals before execution."}
-            </p>
+          ) : (
             <p className="muted">
-              {pending
-                ? countLabel(pending.length, "request") + " awaiting review."
-                : "Approval status unavailable."}
+              No unavailable or unknown entities were returned.
             </p>
-            <Button label="Open changes" onClick={() => navigate("Changes")} />
-          </Panel>
-          <VersionPanel compact />
-          <Panel title="Need a second look?">
-            <p className="muted">
-              Bring an entity, a log entry, or a proposed change to the
-              assistant without leaving your workspace.
+          )}
+        </Panel>
+        <Panel title="Changes">
+          <ResourceStatus resource={approvals} />
+          <p>
+            {pending
+              ? countLabel(pending.length, "request") + " awaiting review."
+              : "Approval status unavailable."}
+          </p>
+          <Button
+            label="Open change review"
+            variant="ghost"
+            onClick={() => navigate("Changes")}
+          />
+          {mode === "observe" && (
+            <p className="context-note muted">
+              Observe mode blocks saving and other mutations.
             </p>
-            <Button
-              label="Ask about my installation"
-              onClick={() =>
-                ask(
-                  "Review the current home context and help me prioritize what to investigate. Do not change anything.",
-                )
-              }
-            />
-          </Panel>
-        </div>
-      </div>
-    </>
+          )}
+        </Panel>
+      </aside>
+    </div>
   );
 }
 function VersionPanel({ compact = false }: { compact?: boolean }) {
@@ -1367,10 +1447,27 @@ type VersionInfo = {
   };
 };
 function SettingsView({ theme }: { theme: ThemeState }) {
+  const connection = useResource<{ agent?: string }>("health");
   const tools = useResource<{ tools: ToolSchema[] }>("tools");
   const audit = useResource<{ audit: AuditEntry[] }>("audit");
   return (
     <>
+      <Panel title="Assistant connection">
+        <ResourceStatus resource={connection} />
+        <p>
+          {connection.data?.agent === "opencode"
+            ? "OpenCode is selected as the AI runtime."
+            : connection.data?.agent === "codex"
+              ? "The Codex adapter is a placeholder in this release."
+              : "The built-in example assistant is active. It does not run a real AI model."}
+        </p>
+        <p className="muted">
+          To connect OpenCode, open Home Assistant Settings → Apps → Hasswright
+          → Configuration and set opencode_base_url to your OpenCode server URL.
+          Authenticate with your model provider in OpenCode, then restart the
+          Hasswright app from its Home Assistant page.
+        </p>
+      </Panel>
       <Panel title="Appearance">
         <div className="setting-row">
           <div>

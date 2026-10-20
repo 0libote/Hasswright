@@ -3,7 +3,7 @@
 | Capability | Status | Mechanism |
 |---|---|---|
 | Install as HA app | ✅ | `hasswright/config.yaml` + Ingress |
-| Installation workspace + optional assistant | ✅ | Astryx task views, context/approvals/audit, sessions API (request/reply) |
+| Task workspace + home context | ✅ | Inline task input/results and saved tasks, direct gateway-backed configuration/log checks, entity search and change review; sessions API (request/reply) |
 | Multi-arch image publication | Prepared; not yet activated | Native container smoke tests and GHCR release workflow; source installs retained until public images are verified |
 | Home Assistant appearance | ✅ in same-origin Ingress | Live theme-variable bridge to Astryx; system light/dark fallback for direct/cross-origin access |
 | Provider auth (OpenCode OAuth/API, local models) | ✅ via OpenCode | OpenCode server handles providers; Hasswright passes through |

@@ -15,7 +15,7 @@ through approvals, backups, and validation. Default mode is read-only.
 
 ## What it does
 
-- **Workspace** — installation context, attention items, investigation shortcuts, approvals, updates, and recent activity. The assistant opens in a supporting panel.
+- **Workspace** — a visible task input with inline results and saved tasks, direct configuration checks and error logs, and home context alongside the work. Entity search and change review are one click away.
 - **Overview / Explorer** — live inventory: versions, domains, unavailable entities, registries, repairs.
 - **Investigations** — error log, repair issues, automation traces with evidence-first diagnoses.
 - **Changes** — review pending approvals and run policy-gated tools. Write/apply paths remain experimental; see the audit.
